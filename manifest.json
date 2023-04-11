@@ -4,19 +4,32 @@
   "version": "0.1",
   "manifest_version": 3,
   "action": {
-    "default_popup": "hello.html",
-    "default_icon": "hello_extensions.png"
+    "default_popup": "popup/popup.html",
+    "default_icon": "icons/16.png"
+  },
+  "options_page": "options/options.html",
+  "icons": {
+    "16": "icons/16.png"
   },
   "permissions": [
     "background",
+    "storage",
     "unlimitedStorage",
     "webRequest"
   ],
   "host_permissions": [
     "*://leetcode.com/problems/*/submit/",
-    "*://leetcode.com/submissions/detail/*/check/"
+    "*://leetcode.com/submissions/detail/*/check/",
+    "*://leetcode.com/problems/*/"
   ],
   "background": {
-    "service_worker": "background.js"
-  }
+    "service_worker": "service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://leetcode.com/problems/*/"],
+      "js": ["scripts/content-script.js"]
+    }
+  ]
+
 }
