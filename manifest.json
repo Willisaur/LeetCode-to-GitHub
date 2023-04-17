@@ -1,35 +1,35 @@
 {
   "name": "LeetCode to GitHub",
   "description": "Automatically upload your LeetCode solutions to GitHub.",
-  "version": "0.1",
+  "version": "0.2",
   "manifest_version": 3,
   "action": {
     "default_popup": "popup/popup.html",
-    "default_icon": "icons/16.png"
+    "default_icon": "icons/icon128.png"
   },
   "options_page": "options/options.html",
   "icons": {
-    "16": "icons/16.png"
+    "128": "icons/icon128.png",
+    "48": "icons/icon48.png",
+    "32": "icons/icon32.png",
+    "16": "icons/icon16.png"
   },
   "permissions": [
     "background",
     "storage",
     "unlimitedStorage",
-    "webRequest"
+    "webRequest",
+    "tabs",
+    "cookies",
+    "scripting"
   ],
   "host_permissions": [
+    "*://leetcode.com/problems/*/*",
     "*://leetcode.com/problems/*/submit/",
     "*://leetcode.com/submissions/detail/*/check/",
-    "*://leetcode.com/problems/*/"
+    "*://github.com/"
   ],
   "background": {
     "service_worker": "service-worker.js"
-  },
-  "content_scripts": [
-    {
-      "matches": ["*://leetcode.com/problems/*/"],
-      "js": ["scripts/content-script.js"]
-    }
-  ]
-
+  }
 }
