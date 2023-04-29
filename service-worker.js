@@ -53,8 +53,7 @@ chrome.webRequest.onCompleted.addListener(
 
         // Save the problem name to leetcode_problemName
         .then((result) => chrome.storage.local.set({ "leetcode_problemName": result[0]["result"] }))
-        .catch((error) => console.error(error));
-
+        
       leetcode_problemName = ((await chrome.storage.local.get(["leetcode_problemName"]))["leetcode_problemName"]);
       await chrome.storage.local.remove("leetcode_problemName");
 
@@ -146,34 +145,19 @@ chrome.webRequest.onCompleted.addListener(
           console.log(github_username, github_repo, leetcode_problemName);
 
 
+          // https://github.com/Willisaur/LeetCode-Solutions/new/main?filename=test.py&value=%22hello%20world%22
+          // const url = "https://www.example.com/search?q=javascript tutorial";
+          // const encodedUrl = encodeURIComponent(url);
+          // console.log(encodedUrl);
+          
 
           chrome.windows.create({
-            url: "https://github.com/" + github_username + "/" + github_repo + "/new/main",
+            url: "https://github.com/" + github_username + "/" + github_repo + "/new/main?filename=" + leetcode_problemName + "/Solution" + fileExt + "&value=" + encodeURIComponent(submittedCode),
             type: "popup",
             width: 400,
             height: 600
           }, function (window) {
-            // Get the active tab
-            chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-              // Execute the script in the context of the active tab
-              chrome.scripting.executeScript(
-                {
-                  args: [leetcode_problemName, fileExt, submittedCode, codeData],
-                  target: { tabId: tabs[0].id },
-                  func: function (lcpn, fe, sc, cd) {
-                    // Get the input element by its class name
-                    let github_fileName = document.querySelector(".form-control.js-detect-filename-language.js-blob-filename.js-breadcrumb-nav.mr-1.mt-1.mt-sm-0.col-12.width-sm-auto");
-                    github_fileName.value = lcpn + "/Solution" + fe;
-
-                    let github_code = document.querySelector("span[cm-text]:first-child");
-                    console.log(github_code);
-                    //github_code.value = submittedCode + "\n\n\n\n" + codeData;
-                    github_code.textContent = sc + "\n\n\n-----SUBMISSION STATISTICS-----" + cd;
-
-                  }
-                }
-              );
-            });
+            
           });
         }
 
@@ -185,7 +169,8 @@ chrome.webRequest.onCompleted.addListener(
       }
     }
 
-    submittedCode = "";
+    
+    //submittedCode = "";
     codeData = "";
     lastUrl = "";
     newUrl = "";
@@ -199,34 +184,3 @@ chrome.webRequest.onCompleted.addListener(
   ["responseHeaders"]
 );
 
-
-/*
-function uploadToGitHubWithOctoKit(){
-  let authToken = "";
-  chrome.storage.local.get(["github-auth"], function(result) {
-    authToken = result.github-auth;
-  });
-  const octokit = new Octokit({
-    auth: authToken
-  });
-  
-  const commitMessage = questionId + ". [Problem name]";
-  const content = submittedCode + codeData;
-  const filePath = questionId + ". [Problem name]/[Problem name]-" + lang + "." + langExts[lang];
-  const repositoryName = "my-github-repo";
-  
-  octokit.repos.createOrUpdateFileContents({
-    owner: "YOUR_GITHUB_USERNAME",
-    repo: repositoryName,
-    path: filePath,
-    message: commitMessage,
-    content: Buffer.from(content).toString("base64")
-  })
-  .then(response => {
-    console.log("File created:", response.data.content.path);
-  })
-  .catch(error => {
-    console.error("Error creating file:", error);
-  });
-}
-*/
