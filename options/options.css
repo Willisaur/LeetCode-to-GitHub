@@ -1,3 +1,6 @@
-body {
-    background-color: dimgray;
+:root {
+    font-family: "Arial";
+    color: #f0f6fc;
+    background-color: #161b22;
 }
+

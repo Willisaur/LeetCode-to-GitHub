@@ -53,9 +53,10 @@ chrome.webRequest.onCompleted.addListener(
 
         // Save the problem name to leetcode_problemName
         .then((result) => chrome.storage.local.set({ "leetcode_problemName": result[0]["result"] }))
+        .catch(error => console.log(error));
         
       leetcode_problemName = ((await chrome.storage.local.get(["leetcode_problemName"]))["leetcode_problemName"]);
-      await chrome.storage.local.remove("leetcode_problemName");
+      //await chrome.storage.local.remove("leetcode_problemName");
 
 
     });
@@ -122,7 +123,7 @@ chrome.webRequest.onCompleted.addListener(
         // If the submission was accepted (correct), store the relevant data
         if (data["status_code"] === 10 && data["status_msg"] === "Accepted" && data["state"] === "SUCCESS" && data["memory_percentile"] !== null && data["runtime_percentile"] !== null) {
           let github_username = (await chrome.storage.local.get(["github-username"]))["github-username"];
-          let github_repo = "LeetCode-Solutions";  //(await chrome.storage.local.get(["github-repo"]))["github-repo"];
+          let github_repo = (await chrome.storage.local.get(["github-repo-name"]))["github-repo-name"];;
 
           let questionId = data["question_id"];
           let lang = data["pretty_lang"];
@@ -133,31 +134,30 @@ chrome.webRequest.onCompleted.addListener(
           let fileExt = langExts[lang];
 
 
-          codeData +=
-            "#Question #: " + questionId +
-            "\n#Language: " + lang +
-            "\n#Runtime: " + runtime +
-            "\n#Runtime percentile: " + runPerc +
-            "\n#Memory: " + memory + " MB" +
-            "\n#Memory percentile: " + memPerc;
+          codeData += 
+            "Submission Statistics:" + 
+            "\nQuestion #: " + questionId +
+            "\nLanguage: " + lang +
+            "\nRuntime: " + runtime +
+            "\nRuntime percentile: " + runPerc +
+            "\nMemory: " + memory + " MB" +
+            "\nMemory percentile: " + memPerc;
           console.log(submittedCode + "\n\n" + codeData);
           console.log(leetcode_problemName, lang, langExts[lang]);
           console.log(github_username, github_repo, leetcode_problemName);
 
 
-          // https://github.com/Willisaur/LeetCode-Solutions/new/main?filename=test.py&value=%22hello%20world%22
-          // const url = "https://www.example.com/search?q=javascript tutorial";
-          // const encodedUrl = encodeURIComponent(url);
-          // console.log(encodedUrl);
-          
-
-          chrome.windows.create({
-            url: "https://github.com/" + github_username + "/" + github_repo + "/new/main?filename=" + leetcode_problemName + "/Solution" + fileExt + "&value=" + encodeURIComponent(submittedCode),
+          // may not work for URLs that exceed 2k characters
+          await chrome.windows.create({
+            url: "https://github.com/" + encodeURIComponent(github_username) + "/" + encodeURIComponent(github_repo) + "/new/main?filename=" + encodeURIComponent(leetcode_problemName) + "/Solution" + encodeURIComponent(fileExt) + "&message=" + encodeURIComponent(lang) + "%20Solution" + "&description=" + encodeURIComponent(codeData) + "&value=" + encodeURIComponent(submittedCode),
             type: "popup",
             width: 400,
             height: 600
           }, function (window) {
-            
+            submittedCode = "";
+            codeData = "";
+            lastUrl = "";
+            newUrl = "";
           });
         }
 
@@ -166,14 +166,12 @@ chrome.webRequest.onCompleted.addListener(
       } else {
         // Handle the error
         console.error('Request failed with status ' + response.status);
+        submittedCode = "";
+        codeData = "";
+        lastUrl = "";
+        newUrl = "";
       }
     }
-
-    
-    //submittedCode = "";
-    codeData = "";
-    lastUrl = "";
-    newUrl = "";
 
   },
   {

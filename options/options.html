@@ -1,24 +1,28 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>My Test Extension Options</title>
+    <title>L2G Options</title>
     <link rel="stylesheet" href="options.css">
   </head>
   <body>
-    <select id="color">
-      <option value="red">red</option>
-      <option value="green">green</option>
-      <option value="blue">blue</option>
-      <option value="yellow">yellow</option>
-    </select>
+    <h1>Thank you for using LeetCode to GitHub!</h1><br>
 
-    <label>
-      <input type="checkbox" id="like" />
-      I like colors.
-    </label>
-
-    <div id="status"></div>
-    <button id="save">Save</button>
+    <div class="options">
+      <h2>Options:</h2>
+      <label for="github-repo-name">Repository name for LeetCode solutions: </label>
+      <input id="github-repo-name" placeholder="LeetCode-Solutions" />
+      <input id="save-repo-name" type="submit" value="Save" /><br><br>
+  
+      <!--
+      <div class="github-preview">
+        <label for="github-preview-checkbox">Automatically submit to GitHub (skip preview):</label>
+        <input type="checkbox" id="github-preview-checkbox" />
+      </div><br>
+      -->
+  
+      <div id="status"></div>
+      
+    </div>
 
     <script src="options.js"></script>
   </body>

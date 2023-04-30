@@ -1,20 +1,36 @@
-body{
+:root {
+    font-family: "Arial";
+    color: #f0f6fc;
+    background-color: #161b22;
+    font-size: 24;
     height: 400px;
     width: 400px;
-    font-size: 24;
     text-align: center;
-    background-color: rgb(235, 235, 235)
 }
 h1{
     font-size: 30;
 }
 button{
-    color: black;
-    background-color: lightgray;
+    color: #f0f6fc;
+    background-color: #444f5d;
+    border-width: 2px;
     border-radius: 5%;
+    border-color: #abc3e2;
     font-size: 24;
+
+    margin-left: 5px;
+    margin-right: 5px;
 }
 #status {
-    color: green;
+    color: #00be00;
     text-align: center;
-  }
+}
+img{
+    height: 20;
+    border-radius: 5px;
+}
+a{
+    font-family: "Arial";
+    color: #90b3d5;
+    text-decoration: none;
+}
