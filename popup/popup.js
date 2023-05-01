@@ -17,7 +17,7 @@ document.querySelector('#log-in').addEventListener('click', function() {
         if (changeInfo.url === "https://github.com/" && tab.windowId === window.id && tabId === tab.id) {
           // Get username for link to repo
           chrome.cookies.get({ url: changeInfo.url, name: "dotcom_user" }, function(cookie) {
-            chrome.storage.local.set( {"github-username": cookie.value} );
+            chrome.storage.sync.set( {"github-username": cookie.value} );
           });
 
           // Update status to let user know they signed in.

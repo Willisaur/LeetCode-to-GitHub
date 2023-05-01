@@ -28,52 +28,8 @@ const langExts = {
   "Dart": ".dart"
 }
 
-
-
-// Saves the current leetcode problem name
-chrome.webRequest.onCompleted.addListener(
-  function (details) {
-    chrome.tabs.query({ active: true, currentWindow: true }, async function (tabs) {
-      // Execute the script in the context of the active tab
-      await chrome.scripting.executeScript({
-        target: { tabId: tabs[0].id },
-        func: function getTextContent() {
-          // Returns the current leetcode problem name
-          return new Promise((resolve, reject) => {
-            let intervalId = setInterval(() => {
-              const problemName = document.querySelector(".mr-2.text-lg.font-medium.text-label-1.dark\\:text-dark-label-1");
-              if (problemName) {
-                clearInterval(intervalId);
-                resolve(problemName.textContent);
-              }
-            }, 100); // check every .1 second
-          });
-        }
-      })
-
-        // Save the problem name to leetcode_problemName
-        .then((result) => chrome.storage.local.set({ "leetcode_problemName": result[0]["result"] }))
-        .catch(error => console.log(error));
-        
-      leetcode_problemName = ((await chrome.storage.local.get(["leetcode_problemName"]))["leetcode_problemName"]);
-      //await chrome.storage.local.remove("leetcode_problemName");
-
-
-    });
-
-
-
-  },
-  {
-    urls: [
-      "*://leetcode.com/problems/*/*"
-    ]
-  },
-  ["responseHeaders"]
-);
-
 // Listen for when the submit button's request is sent
-// Gets the code that the user submitted
+// Gets the code that the user submitted AND the problem name
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
     // Get the typed code that was submitted
@@ -82,6 +38,13 @@ chrome.webRequest.onBeforeRequest.addListener(
     let requestBody = JSON.parse(enc.decode(arr)); // Turn the decoded data into a JSON
     console.log(requestBody);
     submittedCode = requestBody["typed_code"]; // Update submitted code variable
+    
+    // Get LeetCode problem name
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      //console.log("tabs:", tabs, "\ntabs[0]:", tabs[0])
+      var currentTabTitle = tabs[0].title;
+      leetcode_problemName = currentTabTitle.split("-")[0].slice(0, -1);
+    });
   },
   {
     urls: [
@@ -113,7 +76,6 @@ chrome.webRequest.onCompleted.addListener(
     // If this is the last submission check, update the latest URL to end the listener and store the relevant submission data
     if (responseHeaders.some(header => header.name === "content-encoding" && header.value === "br")) {
       lastUrl = newUrl; // Update lastUrl to stop an infinite loop
-
       const response = await fetch(details.url); // Fetch the data stored at the listened-to link
 
       if (response.ok) {
@@ -122,9 +84,11 @@ chrome.webRequest.onCompleted.addListener(
 
         // If the submission was accepted (correct), store the relevant data
         if (data["status_code"] === 10 && data["status_msg"] === "Accepted" && data["state"] === "SUCCESS" && data["memory_percentile"] !== null && data["runtime_percentile"] !== null) {
-          let github_username = (await chrome.storage.local.get(["github-username"]))["github-username"];
-          let github_repo = (await chrome.storage.local.get(["github-repo-name"]))["github-repo-name"];;
+          // Get GitHub username and repository
+          let github_username = (await chrome.storage.sync.get(["github-username"]))["github-username"];
+          let github_repo = (await chrome.storage.sync.get(["github-repo-name"]))["github-repo-name"];
 
+          // Get submission statistics, questionid, and file extension
           let questionId = data["question_id"];
           let lang = data["pretty_lang"];
           let runPerc = data["runtime_percentile"].toFixed(2);
@@ -146,10 +110,9 @@ chrome.webRequest.onCompleted.addListener(
           console.log(leetcode_problemName, lang, langExts[lang]);
           console.log(github_username, github_repo, leetcode_problemName);
 
-
           // may not work for URLs that exceed 2k characters
           await chrome.windows.create({
-            url: "https://github.com/" + encodeURIComponent(github_username) + "/" + encodeURIComponent(github_repo) + "/new/main?filename=" + encodeURIComponent(leetcode_problemName) + "/Solution" + encodeURIComponent(fileExt) + "&message=" + encodeURIComponent(lang) + "%20Solution" + "&description=" + encodeURIComponent(codeData) + "&value=" + encodeURIComponent(submittedCode),
+            url: "https://github.com/" + encodeURIComponent(github_username) + "/" + encodeURIComponent(github_repo) + "/new/main?filename=" + encodeURIComponent(questionId + ". " + leetcode_problemName) + "/Solution" + encodeURIComponent(fileExt) + "&message=" + encodeURIComponent(lang) + "%20Solution" + "&description=" + encodeURIComponent(codeData) + "&value=" + encodeURIComponent(submittedCode),
             type: "popup",
             width: 400,
             height: 600
@@ -160,7 +123,6 @@ chrome.webRequest.onCompleted.addListener(
             newUrl = "";
           });
         }
-
 
 
       } else {

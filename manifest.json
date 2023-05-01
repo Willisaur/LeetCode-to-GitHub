@@ -1,7 +1,7 @@
 {
   "name": "LeetCode to GitHub",
   "description": "Automatically upload your LeetCode solutions to GitHub.",
-  "version": "0.3",
+  "version": "0.4",
   "manifest_version": 3,
   "action": {
     "default_popup": "popup/popup.html",
@@ -17,11 +17,9 @@
   "permissions": [
     "background",
     "storage",
-    "unlimitedStorage",
     "webRequest",
     "tabs",
-    "cookies",
-    "scripting"
+    "cookies"
   ],
   "host_permissions": [
     "*://leetcode.com/problems/*/*",
