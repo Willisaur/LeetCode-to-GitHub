@@ -117,10 +117,47 @@ chrome.webRequest.onCompleted.addListener(
             width: 400,
             height: 600
           }, function (window) {
-            submittedCode = "";
-            codeData = "";
-            lastUrl = "";
-            newUrl = "";
+            chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
+              //console.log("REDIRECT URLS: ", changeInfo, tab)
+              // Check if the updated tab belongs to the created window
+              if (tab.windowId === window.id && (changeInfo.status && tab.status) && changeInfo.status === "complete" && tab.status === "complete"){
+                //console.log("changeinfo: ", changeInfo);
+                //console.log("tab: ", tab);
+                //console.log("THIS URL:", tab.url);
+
+                // regex expression for the link leading up to the repo name + the repo name
+                const repo_regex = new RegExp(`^https:\\/\\/github\\.com\\/${github_username}\\/[^\\/]+\\/?$`);
+
+                // If repo doesn't exist, redirect to create the repo
+                if (tab.title === "Page not found · GitHub") {
+                  // Create the repo
+                  chrome.tabs.update(
+                    tabId, 
+                    {
+                      url: "https://github.com/new?name=" + encodeURIComponent(github_repo) + "&description=" + encodeURIComponent("All of my solutions for LeetCode problems. Made with LeetCode-to-GitHub: bit.ly/L2G-GH")
+                    },
+                    
+                  );
+
+                }
+                // When the repo is created, close the tab
+                else if (repo_regex.test(tab.url)){ // Works with any github.com/username/*/ link... 
+
+                  github_repo = tab.url.split("/")[tab.url.split("/").length - 1];
+                  await chrome.storage.sync.set( {"github-repo-name": github_repo} );
+                  console.log("TAB URL:", tab.url, "\nNEW REPO NAME: ", (await chrome.storage.sync.get(["github-repo-name"]))["github-repo-name"]);
+
+                  submittedCode = "";
+                  codeData = "";
+                  lastUrl = "";
+                  newUrl = "";
+
+                  await chrome.windows.remove(window.id);
+                }
+              }
+            });
+
+            
           });
         }
 
