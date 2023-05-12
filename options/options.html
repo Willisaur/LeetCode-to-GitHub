@@ -3,6 +3,7 @@
   <head>
     <title>L2G Options</title>
     <link rel="stylesheet" href="options.css">
+    <meta charset="UTF-8">
   </head>
   <body>
     <h1>Thank you for using LeetCode to GitHub!</h1><br>
@@ -11,7 +12,15 @@
       <h2>Options:</h2>
       <label for="github-repo-name">Repository name for LeetCode solutions: </label>
       <input id="github-repo-name" placeholder="LeetCode-Solutions" />
-      <input id="save-repo-name" type="submit" value="Save" /><br><br>
+      <div id="save-repo-status"></div>
+
+      <label for="github-token">GitHub Authentication Token: </label>
+      <input id="github-token" type="password" placeholder="github_pat_123456....." />
+      <div id="save-github-token-status"></div><br>
+      
+      <input id="save-options-button" type="submit" value="Save" />
+
+      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
   
       <!--
       <div class="github-preview">
@@ -20,7 +29,7 @@
       </div><br>
       -->
   
-      <div id="status"></div>
+      
       <!--<div id="status2"></div>-->
       
     </div>
