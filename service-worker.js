@@ -1,3 +1,4 @@
+let leetcode_URL_problemName = "";
 let leetcode_problemName = "";
 
 let submittedCode = "";
@@ -28,8 +29,15 @@ const langExts = {
   "Dart": ".dart"
 }
 
+// On extension install, open the options page and set some defaults to make sure that the extension won't crash
+chrome.runtime.onInstalled.addListener(function(details) {
+  if (details.reason === 'install') {
+    chrome.runtime.openOptionsPage();
+  }
+});
+
 // Listen for when the submit button's request is sent
-// Gets the code that the user submitted AND the problem name
+// Gets the code that the user submitted
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
     // Get the typed code that was submitted
@@ -38,13 +46,10 @@ chrome.webRequest.onBeforeRequest.addListener(
     let requestBody = JSON.parse(enc.decode(arr)); // Turn the decoded data into a JSON
     console.log(requestBody);
     submittedCode = requestBody["typed_code"]; // Update submitted code variable
-    
-    // Get LeetCode problem name
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      //console.log("tabs:", tabs, "\ntabs[0]:", tabs[0])
-      var currentTabTitle = tabs[0].title;
-      leetcode_problemName = currentTabTitle.split("-")[0].slice(0, -1);
-    });
+
+    // get URL-formatted problem name for the later fetch request to get display problem name
+    leetcode_URL_problemName = details.url.split("/")[details.url.split("/").indexOf("problems") + 1]; // what comes after "problems" in the URL (i.e., the problem name in the URL)
+    console.log(details.url, "URL-formatted problem name:", details.url.split("/")[details.url.split("/").indexOf("problems") + 1]);
   },
   {
     urls: [
@@ -78,6 +83,39 @@ chrome.webRequest.onCompleted.addListener(
       lastUrl = newUrl; // Update lastUrl to stop an infinite loop
       const response = await fetch(details.url); // Fetch the data stored at the listened-to link
 
+
+      // Get the leetcode problem name
+      await fetch('https://leetcode.com/graphql/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+      },
+        body: JSON.stringify({
+          operationName: 'hasOfficialSolution',
+          query: `
+          query hasOfficialSolution($titleSlug: String!) {
+            question(titleSlug: $titleSlug) {
+              questionTitle
+            }
+          }
+        `,
+          variables: {
+            titleSlug: leetcode_URL_problemName,
+          },
+        }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        // Process the response data
+        const questionTitle = data.data.question.questionTitle;
+        console.log('Question Title:', questionTitle);
+        leetcode_problemName = questionTitle;
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
+
+
       if (response.ok) {
         const data = await response.json();
         console.log(data); // All data from the link has arrived and is stored
@@ -87,6 +125,7 @@ chrome.webRequest.onCompleted.addListener(
           // Get GitHub username and repository
           let github_username = (await chrome.storage.sync.get(["github-username"]))["github-username"];
           let github_repo = (await chrome.storage.sync.get(["github-repo-name"]))["github-repo-name"];
+          let github_authToken = (await chrome.storage.sync.get(["github-token"]))["github-token"];
 
           // Get submission statistics, questionid, and file extension
           let questionId = data["question_id"];
@@ -97,19 +136,166 @@ chrome.webRequest.onCompleted.addListener(
           let memory = data["memory"] / 1000000;
           let fileExt = langExts[lang];
 
+          // Commit path (folders + filename), message, content, and extended description
+          let filePath = encodeURIComponent(`${questionId}. ${leetcode_problemName}/Solution${fileExt}`);
+          let message = // newline-sensitive; format is commitName\n\ncommitDescription
+            `${lang} Solution
 
-          codeData += 
-            "Submission Statistics:" + 
-            "\nQuestion #: " + questionId +
-            "\nLanguage: " + lang +
-            "\nRuntime: " + runtime +
-            "\nRuntime percentile: " + runPerc +
-            "\nMemory: " + memory + " MB" +
-            "\nMemory percentile: " + memPerc;
+            Submission Statistics:
+            Question #: ${questionId}
+            Language: ${lang}
+            Runtime: ${runtime}
+            Runtime percentile: ${runPerc}
+            Memory: ${memory} MB
+            Memory percentile: ${memPerc}`.trim(); // remove leading indentation
+          let content = btoa(submittedCode);
+          
           console.log(submittedCode + "\n\n" + codeData);
           console.log(leetcode_problemName, lang, langExts[lang]);
           console.log(github_username, github_repo, leetcode_problemName);
 
+
+
+          // USING THE API TO CREATE A REPO AND FILE IN BACKGROUND
+          // Create the LeetCode solutions repo if it does not exist
+          // Checks if the repo exists
+          await fetch(`https://api.github.com/repos/${github_username}/${github_repo}`)
+          .then(response => {
+            console.log("Checking if repo exists: ", response);
+                  
+            if (response.status === 404){
+              // If the repo doesn't exist, try to create it
+              console.log("Repo not found. Creating repo...");
+      
+              fetch('https://api.github.com/user/repos', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${github_authToken}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  name: `${github_repo}`,
+                  description: 'All of my solutions for LeetCode problems. Made with LeetCode-to-GitHub: bit.ly/L2G-GH',
+                  private: false
+                })
+              }).then(response2 => {
+                if (response2.status === 422){
+                  // Intended repo already exists
+                  console.error("Repo already made. Please wait a moment before trying again.");
+                } else if (!response2.ok) {
+                  // Intended repo creation failed
+                  throw new Error("Repo could not be created.");
+                } else {
+                  console.log("Repo now exists.");
+                }
+              }).catch(error2 => {
+                console.error("An error occured: ", error2);
+              })
+      
+            } else if (!response.ok){
+              // Unknown when checking if repo exists
+              throw new Error("Failed to check repo existence.");
+            } else {
+              console.log("Repo exists.");
+            }
+          }).then(
+            // If the repo exists, check if the file exists (a solution was already saved for the problem)
+            fetch(`https://api.github.com/repos/${github_username}/${github_repo}/contents/${filePath}`)
+            .then(response3 => {
+              if (response3.status === 404) {
+                // Create the solution file
+                console.log('Solution file does not exist. Creating file...');
+      
+                fetch(`https://api.github.com/repos/${github_username}/${github_repo}/contents/${filePath}`, {
+                  method: 'PUT',
+                  headers: {
+                    Authorization: `Bearer ${github_authToken}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    message: `${message}\n\n${codeData}`, // Provide a commit message and extended description
+                    content: content, // Replace with the base64-encoded content of the file
+                  }),
+                })
+                .then(response => {
+                  if (!response.ok) {
+                    throw new Error('Failed to commit changes');
+                  }
+                  return response.json();
+                })
+                .then(data => {
+                  console.log('Changes committed successfully; file created.');
+                  console.log('Commit details:', data);
+                })
+                .catch(error => {
+                  console.error('An error occurred:', error);
+                });
+      
+                
+              } else if (response3.ok){
+                // Commit to the solution file
+                console.log('Solution file exists. Getting file information...');
+      
+                // Retrieve the current file content (its SHA is what we need)
+                fetch(`https://api.github.com/repos/${github_username}/${github_repo}/contents/${filePath}`, {
+                  headers: {
+                    Authorization: `Bearer ${github_authToken}`,
+                  },
+                }).catch(error => {
+                  console.error('Failed to retrieve file content:', error);
+                })
+                .then(response4 => response4.json())
+                .then(data => {
+                  // Commit to the file
+                  fetch(`https://api.github.com/repos/${github_username}/${github_repo}/contents/${filePath}`, {
+                    method: 'PUT',
+                    headers: {
+                      Authorization: `Bearer ${github_authToken}`,
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      message: `${message}\n\n${codeData}`, // Provide a commit message and extended description
+                      content: content, // Replace with the base64-encoded content of the file
+                      sha: data.sha, // the current SHA
+                    }),
+                  })
+                  .then(response5 => response5.json())
+                  .then(data2 => {
+                    console.log('Changes committed successfully; updated existing file.');
+                    console.log('Commit details:', data2);
+                  })
+                  .catch(error => {
+                    console.error('An error occurred:', error);
+                  })
+                }).catch(error => {
+                  console.error('Failed to commit to existing file:', error);
+                });
+                
+      
+      
+              } else {
+                throw new Error('Failed to check file existence. Not committing to GitHub.');
+              }
+            })
+            .catch(error => {
+              console.error('An error occurred:', error);
+            })
+      
+          ).catch(error => console.error(error))
+          .then( () => {
+            // Wipe all variables
+            submittedCode = "";
+            codeData = "";
+            lastUrl = "";
+            newUrl = "";
+          });
+
+          
+          
+          /*
+          // MANUALLY CREATE A REPO AND SOLUTION FILE
+
+          
           // may not work for URLs that exceed 2k characters
           await chrome.windows.create({
             url: "https://github.com/" + encodeURIComponent(github_username) + "/" + encodeURIComponent(github_repo) + "/new/main?filename=" + encodeURIComponent(questionId + ". " + leetcode_problemName) + "/Solution" + encodeURIComponent(fileExt) + "&message=" + encodeURIComponent(lang) + "%20Solution" + "&description=" + encodeURIComponent(codeData) + "&value=" + encodeURIComponent(submittedCode),
@@ -141,7 +327,7 @@ chrome.webRequest.onCompleted.addListener(
 
                 }
                 // When the repo is created, close the tab
-                else if (repo_regex.test(tab.url)){ // Works with any github.com/username/*/ link... 
+                else if (repo_regex.test(tab.url)){ // Works with any github.com/username/*//* link... 
 
                   github_repo = tab.url.split("/")[tab.url.split("/").length - 1];
                   await chrome.storage.sync.set( {"github-repo-name": github_repo} );
@@ -156,9 +342,8 @@ chrome.webRequest.onCompleted.addListener(
                 }
               }
             });
-
-            
           });
+          */
         }
 
 

@@ -1,5 +1,11 @@
 // Log in button
+//document.querySelector('#log-in').addEventListener('click', function() {
+//  window.open("../login/login.html");
+//});
+
 document.querySelector('#log-in').addEventListener('click', function() {
+  
+
   chrome.windows.create({
     url: "https://github.com/login",
     type: "popup",
@@ -27,6 +33,8 @@ document.querySelector('#log-in').addEventListener('click', function() {
             status.textContent = "";
           }, 2000);
 
+          
+
           // Close the window
           chrome.windows.remove(window.id);
         }
@@ -35,13 +43,10 @@ document.querySelector('#log-in').addEventListener('click', function() {
   );
 });
 
+
 // Options button
 document.querySelector("#options").addEventListener("click", function() {
-  if (chrome.runtime.openOptionsPage) {
-    chrome.runtime.openOptionsPage();
-  } //else {
-    //window.open(chrome.runtime.getURL("../options/options.html"));
-  //}
+  chrome.runtime.openOptionsPage();
 });
 
 // Help button (not yet implemented)

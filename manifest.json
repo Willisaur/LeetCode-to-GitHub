@@ -1,18 +1,18 @@
 {
   "name": "LeetCode to GitHub",
   "description": "Automatically upload your LeetCode solutions to GitHub.",
-  "version": "0.5.1",
+  "version": "1.0.0",
   "manifest_version": 3,
   "action": {
-    "default_popup": "popup/popup.html",
-    "default_icon": "icons/icon128.png"
+    "default_popup": "./popup/popup.html",
+    "default_icon": "./icons/icon128.png"
   },
-  "options_page": "options/options.html",
+  "options_page": "./options/options.html",
   "icons": {
-    "128": "icons/icon128.png",
-    "48": "icons/icon48.png",
-    "32": "icons/icon32.png",
-    "16": "icons/icon16.png"
+    "128": "./icons/icon128.png",
+    "48": "./icons/icon48.png",
+    "32": "./icons/icon32.png",
+    "16": "./icons/icon16.png"
   },
   "permissions": [
     "background",
@@ -22,10 +22,14 @@
     "cookies"
   ],
   "host_permissions": [
+    "*://github.com/*",
+    "*://www.linkedin.com/in/willstarling/",
+    "*://paypal.me/willisaur",
+
+    "*://leetcode.com/graphql/",
+    "*://api.github.com/repos/*",
     "*://leetcode.com/problems/*/*",
-    "*://leetcode.com/problems/*/submit/",
-    "*://leetcode.com/submissions/detail/*/check/",
-    "*://github.com/*"
+    "*://leetcode.com/submissions/detail/*/check/"
   ],
   "background": {
     "service_worker": "service-worker.js"

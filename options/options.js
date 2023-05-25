@@ -9,7 +9,7 @@ const restoreOptions = () => {
       document.getElementById('github-repo-name').value = items["github-repo-name"];
 
       document.getElementById('github-token').placeholder = "•".repeat(items["github-token"].length);
-      document.getElementById('github-token').value = items["github-token"];
+      //document.getElementById('github-token').value = items["github-token"];
 
       //document.getElementById('github-commit-preview-checkbox').checked = items.github-commit-preview-checkbox;
     }
@@ -36,10 +36,6 @@ const saveOptions = () => {
   //  }
   //);
 };
-
-
-document.addEventListener('DOMContentLoaded', restoreOptions); // On refresh, restore options' values
-document.getElementById('save-options-button').addEventListener('click', saveOptions); // Save options on "save" button click
 
 
 ///// Save GitHub repository name /////
@@ -106,7 +102,10 @@ function saveGitHubAuthToken(){
       }
       // do nothing otherwise (if it is equal to the last submission)
     });
-
-    
-  
 };
+
+
+document.addEventListener('DOMContentLoaded', restoreOptions); // On refresh, restore options' values
+document.getElementById('save-options-button').addEventListener('click', saveOptions); // Save options on "save" button click
+
+
