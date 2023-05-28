@@ -1,15 +1,21 @@
 ////////// Restores all options to last save (on refresh) //////////
 const restoreOptions = () => {
   chrome.storage.sync.get(
-    {"github-repo-name" : "github-repo-name", "github-token" : "github-token"}, //, github-commit-preview-checkbox: true },
+    {"github-username" : "", "github-repo-name" :  "LeetCode-Solutions", "github-token" : ""}, //, github-commit-preview-checkbox: true },
     (items) => {
       console.log(items)
+
+      if (items["github-username"] !== ""){
+        document.getElementById('github-token').placeholder = items["github-token"];
+        document.getElementById('github-repo-name').value = items["github-username"];
+      }
 
       document.getElementById('github-repo-name').placeholder = items["github-repo-name"];
       document.getElementById('github-repo-name').value = items["github-repo-name"];
 
-      document.getElementById('github-token').placeholder = "•".repeat(items["github-token"].length);
-      //document.getElementById('github-token').value = items["github-token"];
+      if (items["github-token"] !== ""){
+        document.getElementById('github-token').placeholder = "•".repeat(items["github-token"].length);
+      }
 
       //document.getElementById('github-commit-preview-checkbox').checked = items.github-commit-preview-checkbox;
     }
@@ -18,25 +24,44 @@ const restoreOptions = () => {
 
 ////////// Saves options (via save button) //////////
 const saveOptions = () => {
+  saveGitHubUsername();
   saveGitHubRepoName();
   saveGitHubAuthToken();
-  
-  
-  
-  //chrome.storage.sync.set(
-  //  { github_repo_name : document.getElementById('github-repo-name').value},
-  //  () => {
-  //    // Update status to let user know options were saved.
-  //    document.getElementById('github-repo-name').placeholder = document.getElementById('github-repo-name').value;
-  //    const status = document.getElementById('status2');
-  //    status.textContent = 'Options saved.';
-  //    setTimeout(() => {
-  //      status.textContent = '';
-  //    }, 2000);
-  //  }
-  //);
 };
 
+
+///// Save GitHub username /////
+function saveGitHubUsername(){
+  // Store typed GitHub username and get status text (to notify of save status)
+  const github_username = document.querySelector("#github-username").value;
+  const status = document.getElementById("save-github-username-status");
+  console.log("Typed username: " + github_username);
+
+
+  // Make sure it doesn't equal the last username
+  chrome.storage.sync.get("github-username", function (username){
+    // Check if typed text is new
+    if (github_username !== document.querySelector("#github-username").placeholder){
+      // Check if username is valid; update status text
+      if (github_username !== "" && /^[a-zA-Z\d](?:[a-zA-Z\d]|-(?=[a-zA-Z\d])){0,38}$/.test(github_username)){ // Check if possible username
+        // Save username (to storage and placeholder) and print success
+        chrome.storage.sync.set( {"github-username": github_username} );
+        document.getElementById('github-username').placeholder = github_username;
+        status.style.color = "#00be00";
+        status.textContent = "Username saved!";
+      } else {
+        // Print username constraints
+        status.style.color = "#f22c21";
+        status.textContent = "This is not a possible GitHub username. Please Try again.";
+      }
+    
+      // Clear the status text
+      setTimeout(() => {
+        status.textContent = "";
+      }, 3000);
+    }
+  });
+}
 
 ///// Save GitHub repository name /////
 function saveGitHubRepoName(){
@@ -74,34 +99,34 @@ function saveGitHubAuthToken(){
   const status = document.getElementById("save-github-token-status");
   console.log("Typed auth token: " + github_token);
 
-    // Make sure it doesn't equal the last token
-    chrome.storage.sync.get("github-token", function (token){
-      if (("github-token" in token && github_token === "" && token["github-token"] !== github_token)){ // Token is empty
-        // Delete the token
-        chrome.storage.sync.set( {"github-token": ""} );
-        document.getElementById('github-token').placeholder = "";
-        status.style.color = "#ebae34";
-        status.textContent = "Token deleted!";
+  // Make sure it doesn't equal the last token
+  chrome.storage.sync.get("github-token", function (token){
+    if (("github-token" in token && github_token === "" && token["github-token"] !== github_token)){ // Token is empty
+      // Delete the token
+      chrome.storage.sync.set( {"github-token": ""} );
+      document.getElementById('github-token').placeholder = "ghp_... or github_pat_.....";
+      status.style.color = "#ebae34";
+      status.textContent = "Token deleted!";
 
-        // Clear the status text
-        setTimeout(() => {
-          status.textContent = "";
-        }, 3000);
-      }
-      else if (token["github-token"] !== github_token){ // Token doesn't equal last submission
-        // Save token (to storage and placeholder)
-        chrome.storage.sync.set( {"github-token": github_token} );
-        document.getElementById('github-token').placeholder = "•".repeat(github_token.length);
-        status.style.color = "#00be00";
-        status.textContent = "Token saved!";
-        
-        // Clear the status text
-        setTimeout(() => {
-          status.textContent = "";
-        }, 3000);
-      }
-      // do nothing otherwise (if it is equal to the last submission)
-    });
+      // Clear the status text
+      setTimeout(() => {
+        status.textContent = "";
+      }, 3000);
+    }
+    else if (token["github-token"] !== github_token){ // Token doesn't equal last submission
+      // Save token (to storage and placeholder)
+      chrome.storage.sync.set( {"github-token": github_token} );
+      document.getElementById('github-token').placeholder = "•".repeat(github_token.length);
+      status.style.color = "#00be00";
+      status.textContent = "Token saved!";
+      
+      // Clear the status text
+      setTimeout(() => {
+        status.textContent = "";
+      }, 3000);
+    }
+    // do nothing otherwise (if it is equal to the last submission)
+  });
 };
 
 

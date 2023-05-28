@@ -3,6 +3,7 @@
 //  window.open("../login/login.html");
 //});
 
+/*
 document.querySelector('#log-in').addEventListener('click', function() {
   
 
@@ -42,7 +43,7 @@ document.querySelector('#log-in').addEventListener('click', function() {
     }
   );
 });
-
+*/
 
 // Options button
 document.querySelector("#options").addEventListener("click", function() {

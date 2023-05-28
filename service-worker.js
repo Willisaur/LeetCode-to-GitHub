@@ -30,9 +30,10 @@ const langExts = {
 }
 
 // On extension install, open the options page and set some defaults to make sure that the extension won't crash
-chrome.runtime.onInstalled.addListener(function(details) {
+chrome.runtime.onInstalled.addListener(async function(details) {
   if (details.reason === 'install') {
-    chrome.runtime.openOptionsPage();
+    await chrome.storage.sync.set( {"github-repo-name": "LeetCode-Solutions"} );
+    await chrome.runtime.openOptionsPage();
   }
 });
 
