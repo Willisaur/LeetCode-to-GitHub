@@ -179,18 +179,18 @@ chrome.webRequest.onCompleted.addListener(
                   description: 'All of my solutions for LeetCode problems. Made with LeetCode-to-GitHub: bit.ly/L2G-GH',
                   private: false
                 })
-              }).then(response2 => {
-                if (response2.status === 422){
+              }).then(response => {
+                if (response.status === 422){
                   // Intended repo already exists
                   console.error("Repo already made. Please wait a moment before trying again.");
-                } else if (!response2.ok) {
+                } else if (!response.ok) {
                   // Intended repo creation failed
                   throw new Error("Repo could not be created.");
                 } else {
                   console.log("Repo now exists.");
                 }
-              }).catch(error2 => {
-                console.error("An error occured: ", error2);
+              }).catch(error => {
+                console.error("An error occured: ", error);
               })
       
             } else if (!response.ok){
@@ -202,8 +202,8 @@ chrome.webRequest.onCompleted.addListener(
           }).then(
             // If the repo exists, check if the file exists (a solution was already saved for the problem)
             fetch(`https://api.github.com/repos/${github_username}/${github_repo}/contents/${filePath}`)
-            .then(response3 => {
-              if (response3.status === 404) {
+            .then(response => {
+              if (response.status === 404) {
                 // Create the solution file
                 console.log('Solution file does not exist. Creating file...');
       
@@ -233,7 +233,7 @@ chrome.webRequest.onCompleted.addListener(
                 });
       
                 
-              } else if (response3.ok){
+              } else if (response.ok){
                 // Commit to the solution file
                 console.log('Solution file exists. Getting file information...');
       
@@ -245,7 +245,7 @@ chrome.webRequest.onCompleted.addListener(
                 }).catch(error => {
                   console.error('Failed to retrieve file content:', error);
                 })
-                .then(response4 => response4.json())
+                .then(response => response.json())
                 .then(data => {
                   // Commit to the file
                   fetch(`https://api.github.com/repos/${github_username}/${github_repo}/contents/${filePath}`, {
@@ -260,10 +260,10 @@ chrome.webRequest.onCompleted.addListener(
                       sha: data.sha, // the current SHA
                     }),
                   })
-                  .then(response5 => response5.json())
-                  .then(data2 => {
+                  .then(response => response.json())
+                  .then(data => {
                     console.log('Changes committed successfully; updated existing file.');
-                    console.log('Commit details:', data2);
+                    console.log('Commit details:', data);
                   })
                   .catch(error => {
                     console.error('An error occurred:', error);

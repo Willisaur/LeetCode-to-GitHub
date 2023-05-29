@@ -61,7 +61,7 @@ function saveGitHubUsername(){
       }, 3000);
     }
   });
-}
+};
 
 ///// Save GitHub repository name /////
 function saveGitHubRepoName(){

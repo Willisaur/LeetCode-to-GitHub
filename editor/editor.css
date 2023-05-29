@@ -1,0 +1,64 @@
+body {
+    font-family: "Arial";
+    color: #f0f6fc;
+    background-color: #161b22;
+    font-size: 16px;
+    line-height: 1.5;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.upload-editor {
+    width: 75%;
+    flex-direction: column;
+    height: auto;
+}
+
+.static-input, .dynamic-input {
+    color: #1d1d1d;
+    border: 1px solid #CCCCCC;
+    border-radius: 4px;
+    background-color: #CCCCCC;
+    resize: vertical;
+    overflow: scroll;
+}
+.dynamic-input {
+    background-color: #FFFFFF;
+}
+
+input[type=submit] {
+    border-radius: 5px;
+    border-color: #abc3e2;
+    background-color: #444f5d;
+    color: #f0f6fc;
+}
+input[type=submit]:hover {
+    background-color: #4c5a6c;
+}
+input[type=submit]:active {
+    background-color: #303945;
+}
+
+#github-commit-form {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    height: fit-content;
+}
+.input-box {
+    display: flex;
+    flex-direction: column;
+}
+#file-content {
+    min-height: 7rem;
+    max-height: 14rem;
+}
+#commit-description {
+    min-height: 5rem;
+    max-height: 10rem;
+}
+.form-bottom {
+    margin-top:.5rem;
+}

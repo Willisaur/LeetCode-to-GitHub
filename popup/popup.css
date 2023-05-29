@@ -1,4 +1,4 @@
-:root {
+body {
     font-family: "Arial";
     color: #f0f6fc;
     background-color: #161b22;
@@ -14,17 +14,18 @@ button{
     color: #f0f6fc;
     background-color: #444f5d;
     border-width: 2px;
-    border-radius: 5%;
+    border-radius: .4rem;
     border-color: #abc3e2;
     font-size: 24;
+    padding: .5rem .75rem .5rem .75rem;
+}
+button:hover {
+    background-color: #4c5a6c;
+}
+button:active {
+    background-color: #303945;
+}
 
-    margin-left: 5px;
-    margin-right: 5px;
-}
-#status {
-    color: #00be00;
-    text-align: center;
-}
 img{
     height: 20;
     border-radius: 5px;
