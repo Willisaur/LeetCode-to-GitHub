@@ -1,7 +1,7 @@
 {
   "name": "LeetCode to GitHub",
   "description": "Automatically upload your LeetCode solutions to GitHub.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "manifest_version": 3,
   "action": {
     "default_popup": "./popup/popup.html",
