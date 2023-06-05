@@ -100,7 +100,6 @@ document.getElementById('options-form').addEventListener('submit', (event) => {
         // Clear the status text
         setTimeout(() => {
           successMessage.innerHTML = "";
-          resolve();
         }, 3000);
       }
     }
@@ -127,7 +126,6 @@ document.getElementById("delete-token-button").addEventListener("click", functio
       // Clear the status text
       setTimeout(() => {
         tokenStatus.innerHTML = "";
-        resolve();
       }, 3000);
     }
     else if (github_token){
