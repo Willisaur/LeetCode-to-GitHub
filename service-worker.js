@@ -2,7 +2,6 @@ let leetcode_URL_problemName = "";
 let leetcode_problemName = "";
 
 let submittedCode = "";
-let codeData = "";
 
 let lastUrl = "";
 let newUrl = "";
@@ -29,10 +28,15 @@ const langExts = {
   "Dart": ".dart"
 }
 
-// On extension install, open the options page and set some defaults to make sure that the extension won't crash
+// On extension install, open the options page and set some defaults
 chrome.runtime.onInstalled.addListener(async function(details) {
   if (details.reason === 'install') {
-    await chrome.storage.sync.set( {"github-repo-name": "LeetCode-Solutions"} );
+    await chrome.storage.sync.set( {
+      "github-username" : "", 
+      "github-repo-name" : "LeetCode-Solutions", 
+      "github-token" : "" , 
+      "commit-preview-checkbox" : false 
+    } );
     await chrome.runtime.openOptionsPage();
   }
 });
@@ -151,8 +155,8 @@ chrome.webRequest.onCompleted.addListener(
             Memory percentile: ${memPerc}`.trim(); // remove leading indentation
           let content = btoa(submittedCode);
           
-          console.log(submittedCode + "\n\n" + codeData);
-          console.log(leetcode_problemName, lang, langExts[lang]);
+          console.log(submittedCode);
+          console.log(lang, langExts[lang]);
           console.log(github_username, github_repo, leetcode_problemName);
 
 
@@ -214,7 +218,7 @@ chrome.webRequest.onCompleted.addListener(
                     'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
-                    message: `${message}\n\n${codeData}`, // Provide a commit message and extended description
+                    message: message, // Provide a commit message and extended description
                     content: content, // Replace with the base64-encoded content of the file
                   }),
                 })
@@ -255,7 +259,7 @@ chrome.webRequest.onCompleted.addListener(
                       'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                      message: `${message}\n\n${codeData}`, // Provide a commit message and extended description
+                      message: message, // Provide a commit message and extended description
                       content: content, // Replace with the base64-encoded content of the file
                       sha: data.sha, // the current SHA
                     }),
@@ -282,14 +286,7 @@ chrome.webRequest.onCompleted.addListener(
               console.error('An error occurred:', error);
             })
       
-          ).catch(error => console.error(error))
-          .then( () => {
-            // Wipe all variables
-            submittedCode = "";
-            codeData = "";
-            lastUrl = "";
-            newUrl = "";
-          });
+          ).catch(error => console.error(error));
 
           
           
@@ -299,7 +296,7 @@ chrome.webRequest.onCompleted.addListener(
           
           // may not work for URLs that exceed 2k characters
           await chrome.windows.create({
-            url: "https://github.com/" + encodeURIComponent(github_username) + "/" + encodeURIComponent(github_repo) + "/new/main?filename=" + encodeURIComponent(questionId + ". " + leetcode_problemName) + "/Solution" + encodeURIComponent(fileExt) + "&message=" + encodeURIComponent(lang) + "%20Solution" + "&description=" + encodeURIComponent(codeData) + "&value=" + encodeURIComponent(submittedCode),
+            url: "https://github.com/" + encodeURIComponent(github_username) + "/" + encodeURIComponent(github_repo) + "/new/main?filename=" + encodeURIComponent(questionId + ". " + leetcode_problemName) + "/Solution" + encodeURIComponent(fileExt) + "&message=" + encodeURIComponent(lang) + "%20Solution" + "&description=" encodeURIComponent(codeData) + "&value=" + encodeURIComponent(submittedCode),
             type: "popup",
             width: 400,
             height: 600
@@ -334,11 +331,6 @@ chrome.webRequest.onCompleted.addListener(
                   await chrome.storage.sync.set( {"github-repo-name": github_repo} );
                   console.log("TAB URL:", tab.url, "\nNEW REPO NAME: ", (await chrome.storage.sync.get(["github-repo-name"]))["github-repo-name"]);
 
-                  submittedCode = "";
-                  codeData = "";
-                  lastUrl = "";
-                  newUrl = "";
-
                   await chrome.windows.remove(window.id);
                 }
               }
@@ -349,12 +341,7 @@ chrome.webRequest.onCompleted.addListener(
 
 
       } else {
-        // Handle the error
         console.error('Request failed with status ' + response.status);
-        submittedCode = "";
-        codeData = "";
-        lastUrl = "";
-        newUrl = "";
       }
     }
 

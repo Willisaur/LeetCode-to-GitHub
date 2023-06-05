@@ -6,36 +6,39 @@
     <meta charset="UTF-8">
   </head>
   <body>
-    <h1>Thank you for using LeetCode to GitHub!</h1><br>
-
-    <div class="options">
+    <form id="options-form">
       <h2>Options:</h2>
 
-      <label for="github-username">GitHub username: </label>
-      <input id="github-username" placeholder="johnappleseed" />
-      <div id="save-github-username-status"></div>
+      <div class="options">
+        <label for="github-username">GitHub username: </label>
+        <input id="github-username" placeholder="johnappleseed" />
+      </div>
 
-      <label for="github-repo-name">Repository name for LeetCode solutions: </label>
-      <input id="github-repo-name" placeholder="LeetCode-Solutions" />
-      <div id="save-repo-status"></div>
+      <div id="github-repo-container" class="options">
+        <label for="github-repo-name">Repo name: </label>
+        <input id="github-repo-name" placeholder="LeetCode-Solutions" />
+      </div>
 
-      <label for="github-token">GitHub authentication token: </label>
-      <input id="github-token" type="password" placeholder="ghp_... or github_pat_....." />
-      <div id="save-github-token-status"></div><br>
-      
-      <input id="save-options-button" type="submit" value="Save" />
+      <div class="options">
+        <label for="github-token">GitHub authentication token: </label>
+        <input id="github-token" type="password" placeholder="ghp_... or github_pat_..." />
+      </div>
+        
+      <div id="preview-container" class="options">
+        <label for="preview-checkbox">Auto-commit to GitHub:</label>
+        <input type="checkbox" id="preview-checkbox" />
+      </div>
 
-      
-      <!--
-      <div class="github-preview">
-        <label for="github-commit-preview-checkbox">Automatically submit to GitHub (skip preview):</label>
-        <input type="checkbox" id="github-commit-preview-checkbox" />
-      </div><br>
-      -->
-  
-      
-      <!--<div id="status2"></div>-->
-      
+      <div id="buttons-container">
+        <button id="delete-token-button">Delete token</button>
+        <input id="save-options-button" type="submit" value="Save" />
+      </div>
+
+      <div id="status-container">
+        <div id="error-messages"></div>
+        <div id="delete-token"></div>
+        <div id="success-message"></div>
+      </div>
     </div>
 
     <script src="options.js"></script>

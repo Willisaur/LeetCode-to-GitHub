@@ -9,11 +9,11 @@ document.querySelector("#options").addEventListener("click", function() {
 //});
 
 // Social links
-document.querySelector(".github-links").addEventListener("click", function() {
+document.querySelector("#github-links").addEventListener("click", function() {
   window.open("https://github.com/Willisaur");
 });
-document.querySelector(".linkedin-links").addEventListener("click", function() {
+document.querySelector("#linkedin-links").addEventListener("click", function() {
   window.open("https://www.linkedin.com/in/willstarling/");
-});document.querySelector(".paypal-links").addEventListener("click", function() {
+});document.querySelector("#paypal-links").addEventListener("click", function() {
   window.open("https://paypal.me/willisaur");
 });

@@ -1,9 +1,62 @@
-body{
+body {
     font-family: "Arial";
     color: #f0f6fc;
     background-color: #161b22;
     line-height: 1.5;
+    font-size: 1.25em;
 }
 
+#options-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
 
+.options {
+    display: flex;
+    align-items: center;
+    width: 80%;
+    height: 100%;
+}
+.options label {
+    text-align: right;
+    margin-right: .5em;
+    flex-basis: 50%;
+}
+.options input {
+    width: 40%;
+}
+#preview-checkbox {
+    width: auto;
+}
 
+#buttons-container > * {
+    color: #f0f6fc;
+    background-color: #444f5d;
+    border-width: .1em;
+    border-radius: .4em;
+    border-color: #abc3e2;
+    font-size: .75em;
+    padding: .25em .5em .25em .5em;
+    margin-top: 1em;
+}
+#buttons-container > *:hover {
+    background-color: #4c5a6c;
+}
+#buttons-container > *:hover:active {
+    background-color: #303945;
+}
+
+#status-container {
+    margin-top: .5em;
+    text-align: center;
+}
+#error-messages {
+    color: #f22c21;
+}
+#delete-token {
+    color: #ebae34;
+}
+#success-message {
+    color: #00be00;
+}

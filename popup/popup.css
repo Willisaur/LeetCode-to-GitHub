@@ -2,22 +2,47 @@ body {
     font-family: "Arial";
     color: #f0f6fc;
     background-color: #161b22;
-    font-size: 24;
-    height: 400px;
+    font-size: 20px;
     width: 400px;
+    height: 350px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     text-align: center;
 }
+
+#popup-container{
+    width: 90%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: .5em;
+}
+#social-links-container{
+    font-size: .9em;
+}
+#social-links{
+    background-color: #303945;
+    justify-content: center;
+    padding: .25em 0em .25em 0em;
+    margin: 0em 1em 0em 1em;
+    border-radius: 2em;
+    display: flex;
+    flex-direction: row;
+    gap: 1em;
+}
+
 h1{
-    font-size: 30;
+    font-size: 1.5em;
 }
 button{
     color: #f0f6fc;
     background-color: #444f5d;
-    border-width: 2px;
-    border-radius: .4rem;
+    border-width: .1em;
+    border-radius: .4em;
     border-color: #abc3e2;
-    font-size: 24;
-    padding: .5rem .75rem .5rem .75rem;
+    font-size: 1em;
+    padding: .5em .75em .5em .75em;
 }
 button:hover {
     background-color: #4c5a6c;
@@ -25,13 +50,16 @@ button:hover {
 button:active {
     background-color: #303945;
 }
-
 img{
-    height: 20;
-    border-radius: 5px;
+    height: .8em;
+    border-radius: .25em;
 }
 a{
     font-family: "Arial";
-    color: #90b3d5;
+    color: #bbd0eb;
     text-decoration: none;
+}
+a:hover{
+    text-decoration: underline;
+    text-decoration-color: #bbd0eb;
 }
