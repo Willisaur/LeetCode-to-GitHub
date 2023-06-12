@@ -117,7 +117,7 @@ chrome.webRequest.onCompleted.addListener(
         leetcode_problemName = questionTitle;
       })
       .catch(error => {
-        console.error('Error:', error);
+        console.error('Error getting problem name:', error);
       });
 
 
@@ -131,6 +131,7 @@ chrome.webRequest.onCompleted.addListener(
           let github_username = (await chrome.storage.sync.get(["github-username"]))["github-username"];
           let github_repo = (await chrome.storage.sync.get(["github-repo-name"]))["github-repo-name"];
           let github_authToken = (await chrome.storage.sync.get(["github-token"]))["github-token"];
+          let options_autocommit = (await chrome.storage.sync.get(["commit-preview-checkbox"])["commit-preview-checkbox"]);
 
           // Get submission statistics, questionid, and file extension
           let questionId = data["question_id"];
@@ -152,15 +153,14 @@ chrome.webRequest.onCompleted.addListener(
             Runtime: ${runtime}
             Runtime percentile: ${runPerc}
             Memory: ${memory} MB
-            Memory percentile: ${memPerc}`.trim(); // remove leading indentation
+            Memory percentile: ${memPerc}`; // formmated oddly to remove leading indentation
           let content = btoa(submittedCode);
           
           console.log(submittedCode);
           console.log(lang, langExts[lang]);
           console.log(github_username, github_repo, leetcode_problemName);
 
-
-
+          
           // USING THE API TO CREATE A REPO AND FILE IN BACKGROUND
           // Create the LeetCode solutions repo if it does not exist
           // Checks if the repo exists
@@ -193,8 +193,6 @@ chrome.webRequest.onCompleted.addListener(
                 } else {
                   console.log("Repo now exists.");
                 }
-              }).catch(error => {
-                console.error("An error occured: ", error);
               })
       
             } else if (!response.ok){
@@ -207,38 +205,58 @@ chrome.webRequest.onCompleted.addListener(
             // If the repo exists, check if the file exists (a solution was already saved for the problem)
             fetch(`https://api.github.com/repos/${github_username}/${github_repo}/contents/${filePath}`)
             .then(response => {
+
               if (response.status === 404) {
-                // Create the solution file
+                // If the file doesn't exist in GitHub, create the file -- no need to look for file details
                 console.log('Solution file does not exist. Creating file...');
       
-                fetch(`https://api.github.com/repos/${github_username}/${github_repo}/contents/${filePath}`, {
-                  method: 'PUT',
-                  headers: {
-                    Authorization: `Bearer ${github_authToken}`,
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    message: message, // Provide a commit message and extended description
-                    content: content, // Replace with the base64-encoded content of the file
-                  }),
-                })
-                .then(response => {
-                  if (!response.ok) {
-                    throw new Error('Failed to commit changes');
+                  if (!options_autocommit){
+                    // Open the editor for manual file entry
+                    chrome.tabs.create(
+                      {
+                        url: "./editor/editor.html",
+                      },
+                      (tab) => {
+                        chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
+                          if (tabId === tab.id && changeInfo.status === "complete") {
+                            chrome.tabs.sendMessage(tab.id, {
+                              "filePath": filePath,
+                              "fileContent": content,
+                              "message": message, // commit message and its description
+                              "sha": undefined,
+                            });
+                            chrome.tabs.onUpdated.removeListener(listener);
+                          }
+                        });
+                      }
+                    );
+                  } else {
+                    // Automatically create the file 
+                    fetch(`https://api.github.com/repos/${github_username}/${github_repo}/contents/${filePath}`, {
+                      method: 'PUT',
+                      headers: {
+                        Authorization: `Bearer ${github_authToken}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        message: message, // Provide a commit message and extended description
+                        content: content, // Replace with the base64-encoded content of the file
+                      }),
+                    })
+                    .then(response => {
+                      if (!response.ok) {
+                        throw new Error('Failed to commit changes');
+                      }
+                      return response.json();
+                    })
+                    .then(data => {
+                      console.log('Changes committed successfully; file created.');
+                      console.log('Commit details:', data);
+                    })
                   }
-                  return response.json();
-                })
-                .then(data => {
-                  console.log('Changes committed successfully; file created.');
-                  console.log('Commit details:', data);
-                })
-                .catch(error => {
-                  console.error('An error occurred:', error);
-                });
-      
                 
               } else if (response.ok){
-                // Commit to the solution file
+                // If the file does exist in GitHub, get the file details to get the SHA and then commit to the fole
                 console.log('Solution file exists. Getting file information...');
       
                 // Retrieve the current file content (its SHA is what we need)
@@ -251,100 +269,61 @@ chrome.webRequest.onCompleted.addListener(
                 })
                 .then(response => response.json())
                 .then(data => {
-                  // Commit to the file
-                  fetch(`https://api.github.com/repos/${github_username}/${github_repo}/contents/${filePath}`, {
-                    method: 'PUT',
-                    headers: {
-                      Authorization: `Bearer ${github_authToken}`,
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      message: message, // Provide a commit message and extended description
-                      content: content, // Replace with the base64-encoded content of the file
-                      sha: data.sha, // the current SHA
-                    }),
-                  })
-                  .then(response => response.json())
-                  .then(data => {
-                    console.log('Changes committed successfully; updated existing file.');
-                    console.log('Commit details:', data);
-                  })
-                  .catch(error => {
-                    console.error('An error occurred:', error);
-                  })
+                  if (!options_autocommit){
+                    chrome.tabs.create(
+                      {
+                        url: "./editor/editor.html",
+                      },
+                      (tab) => {
+                        chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
+                          if (tabId === tab.id && changeInfo.status === "complete") {
+                            chrome.tabs.sendMessage(tab.id, {
+                              "filePath": filePath,
+                              "fileContent": content,
+                              "message": message, // commit message and its description
+                              "sha": data.sha,
+                            });
+                            chrome.tabs.onUpdated.removeListener(listener);
+                          }
+                        });
+                      }
+                    );
+                  } else {
+                    // Commit to the file
+                    fetch(`https://api.github.com/repos/${github_username}/${github_repo}/contents/${filePath}`, {
+                      method: 'PUT',
+                      headers: {
+                        Authorization: `Bearer ${github_authToken}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        message: message, // Provide a commit message and extended description
+                        content: content, // Replace with the base64-encoded content of the file
+                        sha: data.sha, // the current SHA
+                      }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                      console.log('Changes committed successfully to existing file; details:', data);
+                    })
+                  }
                 }).catch(error => {
                   console.error('Failed to commit to existing file:', error);
                 });
-                
-      
-      
               } else {
                 throw new Error('Failed to check file existence. Not committing to GitHub.');
               }
+
             })
-            .catch(error => {
-              console.error('An error occurred:', error);
-            })
-      
-          ).catch(error => console.error(error));
-
+          );
           
-          
-          /*
-          // MANUALLY CREATE A REPO AND SOLUTION FILE
-
-          
-          // may not work for URLs that exceed 2k characters
-          await chrome.windows.create({
-            url: "https://github.com/" + encodeURIComponent(github_username) + "/" + encodeURIComponent(github_repo) + "/new/main?filename=" + encodeURIComponent(questionId + ". " + leetcode_problemName) + "/Solution" + encodeURIComponent(fileExt) + "&message=" + encodeURIComponent(lang) + "%20Solution" + "&description=" encodeURIComponent(codeData) + "&value=" + encodeURIComponent(submittedCode),
-            type: "popup",
-            width: 400,
-            height: 600
-          }, function (window) {
-            chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
-              //console.log("REDIRECT URLS: ", changeInfo, tab)
-              // Check if the updated tab belongs to the created window
-              if (tab.windowId === window.id && (changeInfo.status && tab.status) && changeInfo.status === "complete" && tab.status === "complete"){
-                //console.log("changeinfo: ", changeInfo);
-                //console.log("tab: ", tab);
-                //console.log("THIS URL:", tab.url);
-
-                // regex expression for the link leading up to the repo name + the repo name
-                const repo_regex = new RegExp(`^https:\\/\\/github\\.com\\/${github_username}\\/[^\\/]+\\/?$`);
-
-                // If repo doesn't exist, redirect to create the repo
-                if (tab.title === "Page not found · GitHub") {
-                  // Create the repo
-                  chrome.tabs.update(
-                    tabId, 
-                    {
-                      url: "https://github.com/new?name=" + encodeURIComponent(github_repo) + "&description=" + encodeURIComponent("All of my solutions for LeetCode problems. Made with LeetCode-to-GitHub: bit.ly/L2G-GH")
-                    },
-                    
-                  );
-
-                }
-                // When the repo is created, close the tab
-                else if (repo_regex.test(tab.url)){ // Works with any github.com/username/*//* link... 
-
-                  github_repo = tab.url.split("/")[tab.url.split("/").length - 1];
-                  await chrome.storage.sync.set( {"github-repo-name": github_repo} );
-                  console.log("TAB URL:", tab.url, "\nNEW REPO NAME: ", (await chrome.storage.sync.get(["github-repo-name"]))["github-repo-name"]);
-
-                  await chrome.windows.remove(window.id);
-                }
-              }
-            });
-          });
-          */
         }
 
 
       } else {
-        console.error('Request failed with status ' + response.status);
+        console.error('Request with GitHub username and repo failed', response.status);
       }
     }
-
   },
   {
     urls: [
@@ -354,3 +333,51 @@ chrome.webRequest.onCompleted.addListener(
   ["responseHeaders"]
 );
 
+
+
+/*
+// MANUALLY CREATE A REPO AND SOLUTION FILE
+
+// may not work for URLs that exceed 2k characters
+await chrome.windows.create({
+  url: "https://github.com/" + encodeURIComponent(github_username) + "/" + encodeURIComponent(github_repo) + "/new/main?filename=" + encodeURIComponent(questionId + ". " + leetcode_problemName) + "/Solution" + encodeURIComponent(fileExt) + "&message=" + encodeURIComponent(lang) + "%20Solution" + "&description=" encodeURIComponent(codeData) + "&value=" + encodeURIComponent(submittedCode),
+  type: "popup",
+  width: 400,
+  height: 600
+}, function (window) {
+  chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
+    //console.log("REDIRECT URLS: ", changeInfo, tab)
+    // Check if the updated tab belongs to the created window
+    if (tab.windowId === window.id && (changeInfo.status && tab.status) && changeInfo.status === "complete" && tab.status === "complete"){
+      //console.log("changeinfo: ", changeInfo);
+      //console.log("tab: ", tab);
+      //console.log("THIS URL:", tab.url);
+
+      // regex expression for the link leading up to the repo name + the repo name
+      const repo_regex = new RegExp(`^https:\\/\\/github\\.com\\/${github_username}\\/[^\\/]+\\/?$`);
+
+      // If repo doesn't exist, redirect to create the repo
+      if (tab.title === "Page not found · GitHub") {
+        // Create the repo
+        chrome.tabs.update(
+          tabId, 
+          {
+            url: "https://github.com/new?name=" + encodeURIComponent(github_repo) + "&description=" + encodeURIComponent("All of my solutions for LeetCode problems. Made with LeetCode-to-GitHub: bit.ly/L2G-GH")
+          },
+          
+        );
+
+      }
+      // When the repo is created, close the tab
+      else if (repo_regex.test(tab.url)){ // Works with any github.com/username/*//* link... 
+
+        github_repo = tab.url.split("/")[tab.url.split("/").length - 1];
+        await chrome.storage.sync.set( {"github-repo-name": github_repo} );
+        console.log("TAB URL:", tab.url, "\nNEW REPO NAME: ", (await chrome.storage.sync.get(["github-repo-name"]))["github-repo-name"]);
+
+        await chrome.windows.remove(window.id);
+      }
+    }
+  });
+});
+*/

@@ -12,23 +12,28 @@
 
         <form id="github-commit-form">
             <div class="input-box">
-                <label for="filename">Filename: </label>
+                <label for="filename">File path: </label>
                 <input id="filename" class="static-input" readonly />
             </div>
 
             <div class="input-box">
-                <label for="file-content">Content: </label>
+                <label for="file-content">File content: </label>
                 <textarea id="file-content" class="static-input" readonly></textarea>
             </div>
             
             <div class="input-box">
-                <label for="commit-message">Message: </label>
+                <label for="commit-message">Commit message: </label>
                 <input id="commit-message" class="dynamic-input" />
             </div>
         
             <div class="input-box">
-                <label for="commit-description">Description: </label>
+                <label for="commit-description">Commit description: </label>
                 <textarea id="commit-description" class="dynamic-input"></textarea>
+            </div>
+
+            <div class="input-box">
+                <label for="hash">Hash (if applicable): </label>
+                <input id="hash" class="static-input" readonly />
             </div>
 
             <div class="form-bottom">

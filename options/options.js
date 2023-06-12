@@ -79,7 +79,7 @@ document.getElementById('options-form').addEventListener('submit', (event) => {
         }
       }
 
-      if (github_token !== storage["github-token"]){ // Token doesn't equal last submission
+      if (github_token && github_token !== storage["github-token"]){ // Token doesn't equal last submission
         // Save token (to storage and placeholder)
         chrome.storage.sync.set( {"github-token": github_token} );
         document.getElementById('github-token').placeholder = "•".repeat(github_token.length);

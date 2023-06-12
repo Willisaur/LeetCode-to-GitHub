@@ -20,9 +20,9 @@ body {
     color: #1d1d1d;
     border: .1em solid #CCCCCC;
     border-radius: .25em;
-    background-color: #CCCCCC;
+    background-color: #9f9a9a;
     resize: vertical;
-    overflow: scroll;
+    overflow: visible;
 }
 .dynamic-input {
     background-color: #FFFFFF;
