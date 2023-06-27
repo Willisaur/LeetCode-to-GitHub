@@ -9,6 +9,9 @@ body {
     justify-content: center;
     align-items: center;
 }
+textarea {
+    font-family: "Arial";
+}
 
 .upload-editor {
     width: 30em;
@@ -21,7 +24,10 @@ body {
     border: .1em solid #CCCCCC;
     border-radius: .25em;
     background-color: #9f9a9a;
-    resize: vertical;
+    min-width: 100%;
+    max-width: 150%;
+    align-self: center;
+    resize: both;
     overflow: visible;
 }
 .dynamic-input {
@@ -59,6 +65,10 @@ input[type=submit]:active {
     min-height: 5em;
     max-height: 10em;
 }
-.form-bottom {
+#form-bottom {
     margin-top:.5em;
+    text-align: center;
+}
+#error-messages {
+    color: #f22c21;
 }

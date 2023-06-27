@@ -128,22 +128,22 @@ chrome.webRequest.onCompleted.addListener(
         // If the submission was accepted (correct), store the relevant data
         if (data["status_code"] === 10 && data["status_msg"] === "Accepted" && data["state"] === "SUCCESS" && data["memory_percentile"] !== null && data["runtime_percentile"] !== null) {
           // Get GitHub username and repository
-          let github_username = (await chrome.storage.sync.get(["github-username"]))["github-username"];
-          let github_repo = (await chrome.storage.sync.get(["github-repo-name"]))["github-repo-name"];
-          let github_authToken = (await chrome.storage.sync.get(["github-token"]))["github-token"];
-          let options_autocommit = (await chrome.storage.sync.get(["commit-preview-checkbox"])["commit-preview-checkbox"]);
+          const github_username = (await chrome.storage.sync.get(["github-username"]))["github-username"];
+          const github_repo = (await chrome.storage.sync.get(["github-repo-name"]))["github-repo-name"];
+          const github_authToken = (await chrome.storage.sync.get(["github-token"]))["github-token"];
+          const options_autocommit = (await chrome.storage.sync.get(["commit-preview-checkbox"]))["commit-preview-checkbox"];
 
           // Get submission statistics, questionid, and file extension
-          let questionId = data["question_id"];
-          let lang = data["pretty_lang"];
-          let runPerc = data["runtime_percentile"].toFixed(2);
-          let runtime = data["status_runtime"]
-          let memPerc = parseFloat(data["memory_percentile"]).toFixed(2);
-          let memory = data["memory"] / 1000000;
-          let fileExt = langExts[lang];
+          const questionId = data["question_id"];
+          const lang = data["pretty_lang"];
+          const runPerc = data["runtime_percentile"].toFixed(2);
+          const runtime = data["status_runtime"]
+          const memPerc = parseFloat(data["memory_percentile"]).toFixed(2);
+          const memory = data["memory"] / 1000000;
+          const fileExt = langExts[lang];
 
           // Commit path (folders + filename), message, content, and extended description
-          let filePath = encodeURIComponent(`${questionId}. ${leetcode_problemName}/Solution${fileExt}`);
+          const filePath = encodeURIComponent(`${questionId}. ${leetcode_problemName}/Solution${fileExt}`);
           let message = // newline-sensitive; format is commitName\n\ncommitDescription
             `${lang} Solution
 
@@ -211,24 +211,15 @@ chrome.webRequest.onCompleted.addListener(
                 console.log('Solution file does not exist. Creating file...');
       
                   if (!options_autocommit){
-                    // Open the editor for manual file entry
-                    chrome.tabs.create(
-                      {
-                        url: "./editor/editor.html",
-                      },
-                      (tab) => {
-                        chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
-                          if (tabId === tab.id && changeInfo.status === "complete") {
-                            chrome.tabs.sendMessage(tab.id, {
-                              "filePath": filePath,
-                              "fileContent": content,
-                              "message": message, // commit message and its description
-                              "sha": undefined,
-                            });
-                            chrome.tabs.onUpdated.removeListener(listener);
-                          }
-                        });
-                      }
+                    chrome.storage.local.set({
+                      "file-path": decodeURIComponent(filePath),
+                      "file-content": atob(content),
+                      "commit-message": message.split('\n\n')[0],
+                      "commit-description": message.split('\n\n')[1].replace(/^\s+/gm, ''),
+                      "commit-hash": ""
+                    }).then(
+                      // Open the editor
+                      chrome.tabs.create({ url: "./editor/editor.html" })
                     );
                   } else {
                     // Automatically create the file 
@@ -270,23 +261,16 @@ chrome.webRequest.onCompleted.addListener(
                 .then(response => response.json())
                 .then(data => {
                   if (!options_autocommit){
-                    chrome.tabs.create(
-                      {
-                        url: "./editor/editor.html",
-                      },
-                      (tab) => {
-                        chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
-                          if (tabId === tab.id && changeInfo.status === "complete") {
-                            chrome.tabs.sendMessage(tab.id, {
-                              "filePath": filePath,
-                              "fileContent": content,
-                              "message": message, // commit message and its description
-                              "sha": data.sha,
-                            });
-                            chrome.tabs.onUpdated.removeListener(listener);
-                          }
-                        });
-                      }
+                    // Save file and commit details to local storage to load in the editor
+                    chrome.storage.local.set({
+                      "file-path": decodeURIComponent(filePath),
+                      "file-content": atob(content),
+                      "commit-message": message.split('\n\n')[0],
+                      "commit-description": message.split('\n\n')[1].replace(/^\s+/gm, ''),
+                      "commit-hash": data.sha
+                    }).then(
+                      // Open the editor
+                      chrome.tabs.create({ url: "./editor/editor.html"})
                     );
                   } else {
                     // Commit to the file
@@ -332,52 +316,3 @@ chrome.webRequest.onCompleted.addListener(
   },
   ["responseHeaders"]
 );
-
-
-
-/*
-// MANUALLY CREATE A REPO AND SOLUTION FILE
-
-// may not work for URLs that exceed 2k characters
-await chrome.windows.create({
-  url: "https://github.com/" + encodeURIComponent(github_username) + "/" + encodeURIComponent(github_repo) + "/new/main?filename=" + encodeURIComponent(questionId + ". " + leetcode_problemName) + "/Solution" + encodeURIComponent(fileExt) + "&message=" + encodeURIComponent(lang) + "%20Solution" + "&description=" encodeURIComponent(codeData) + "&value=" + encodeURIComponent(submittedCode),
-  type: "popup",
-  width: 400,
-  height: 600
-}, function (window) {
-  chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
-    //console.log("REDIRECT URLS: ", changeInfo, tab)
-    // Check if the updated tab belongs to the created window
-    if (tab.windowId === window.id && (changeInfo.status && tab.status) && changeInfo.status === "complete" && tab.status === "complete"){
-      //console.log("changeinfo: ", changeInfo);
-      //console.log("tab: ", tab);
-      //console.log("THIS URL:", tab.url);
-
-      // regex expression for the link leading up to the repo name + the repo name
-      const repo_regex = new RegExp(`^https:\\/\\/github\\.com\\/${github_username}\\/[^\\/]+\\/?$`);
-
-      // If repo doesn't exist, redirect to create the repo
-      if (tab.title === "Page not found · GitHub") {
-        // Create the repo
-        chrome.tabs.update(
-          tabId, 
-          {
-            url: "https://github.com/new?name=" + encodeURIComponent(github_repo) + "&description=" + encodeURIComponent("All of my solutions for LeetCode problems. Made with LeetCode-to-GitHub: bit.ly/L2G-GH")
-          },
-          
-        );
-
-      }
-      // When the repo is created, close the tab
-      else if (repo_regex.test(tab.url)){ // Works with any github.com/username/*//* link... 
-
-        github_repo = tab.url.split("/")[tab.url.split("/").length - 1];
-        await chrome.storage.sync.set( {"github-repo-name": github_repo} );
-        console.log("TAB URL:", tab.url, "\nNEW REPO NAME: ", (await chrome.storage.sync.get(["github-repo-name"]))["github-repo-name"]);
-
-        await chrome.windows.remove(window.id);
-      }
-    }
-  });
-});
-*/
