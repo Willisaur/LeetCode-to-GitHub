@@ -33,7 +33,7 @@ document.getElementById('options-form').addEventListener('submit', (event) => {
   const successMessage = document.getElementById("success-message");
   const errorMessages = document.getElementById("error-messages");
   // Clear existing error messages
-  errorMessages.innerHTML = '';
+  errorMessages.innerText = '';
 
   // Get the user's options
   const github_username = document.getElementById("github-username").value;
@@ -94,11 +94,11 @@ document.getElementById('options-form').addEventListener('submit', (event) => {
 
       // If there are no errors, proceed with saving settings and provide success feedback
       if (errorMessages.childElementCount === 0) {
-        successMessage.innerHTML = "Saved!";
+        successMessage.innerText = "Saved!";
 
         // Clear the status text
         setTimeout(() => {
-          successMessage.innerHTML = "";
+          successMessage.innerText = "";
         }, 3000);
       }
     }
@@ -120,11 +120,11 @@ document.getElementById("delete-token-button").addEventListener("click", functio
       document.getElementById('github-token').placeholder = "ghp_... or github_pat_...";
       
       // Print deletion status
-      tokenStatus.innerHTML = "Token deleted!";
+      tokenStatus.innerText = "Token deleted!";
   
       // Clear the status text
       setTimeout(() => {
-        tokenStatus.innerHTML = "";
+        tokenStatus.innerText = "";
       }, 3000);
     }
     else if (github_token){
