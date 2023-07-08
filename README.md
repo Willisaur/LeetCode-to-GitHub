@@ -1,4 +1,5 @@
-Download (Chrome Web Store): bit.ly/CWS-L2G
+# Download 
+(Chrome Web Store): bit.ly/CWS-L2G
 
 # LeetCode-to-GitHub
 A Chrome extension that automatically uploads your LeetCode solutions to GitHub.
