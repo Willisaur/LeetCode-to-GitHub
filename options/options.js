@@ -47,7 +47,8 @@ document.getElementById('options-form').addEventListener('submit', (event) => {
       "github-username" : "", 
       "github-repo-name" : "LeetCode-Solutions", 
       "github-token" : "" , 
-      "commit-preview-checkbox" : false 
+      "commit-preview-checkbox" : false, 
+      "error_bad-auth-token": 0
     }, function (storage)
     {
       // Check if typed text is new
@@ -91,6 +92,11 @@ document.getElementById('options-form').addEventListener('submit', (event) => {
       }
       // do nothing otherwise (if it is equal to the last checkbox)
 
+      if (storage["error_bad-auth-token"] === 1){
+        const errorMessage = document.createElement('p');
+        errorMessage.textContent = "Auth token is invalid. Please ensure it has not expired or try regenerating it.";
+        errorMessages.appendChild(errorMessage);  
+      }
 
       // If there are no errors, proceed with saving settings and provide success feedback
       if (errorMessages.childElementCount === 0) {

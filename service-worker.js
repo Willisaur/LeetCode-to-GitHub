@@ -29,15 +29,15 @@ const langExts = {
 }
 
 // On extension install, open the options page and set some defaults
-chrome.runtime.onInstalled.addListener(async function(details) {
+chrome.runtime.onInstalled.addListener(function(details) {
   if (details.reason === 'install') {
-    await chrome.storage.sync.set( {
+    chrome.storage.sync.set( {
       "github-username" : "", 
       "github-repo-name" : "LeetCode-Solutions", 
       "github-token" : "" , 
-      "commit-preview-checkbox" : false 
-    } );
-    await chrome.runtime.openOptionsPage();
+      "commit-preview-checkbox" : false, 
+      "error_bad-auth-token": 0
+    }).then(chrome.runtime.openOptionsPage());
   }
 });
 
@@ -96,9 +96,9 @@ chrome.webRequest.onCompleted.addListener(
           'Content-Type': 'application/json',
       },
         body: JSON.stringify({
-          operationName: 'hasOfficialSolution',
+          operationName: 'consolePanelConfig',
           query: `
-          query hasOfficialSolution($titleSlug: String!) {
+          query consolePanelConfig($titleSlug: String!) {
             question(titleSlug: $titleSlug) {
               questionTitle
             }
@@ -112,6 +112,7 @@ chrome.webRequest.onCompleted.addListener(
       .then(response => response.json())
       .then(data => {
         // Process the response data
+        console.log(leetcode_URL_problemName,"\n", data)
         const questionTitle = data.data.question.questionTitle;
         console.log('Question Title:', questionTitle);
         leetcode_problemName = questionTitle;
@@ -164,8 +165,13 @@ chrome.webRequest.onCompleted.addListener(
           // USING THE API TO CREATE A REPO AND FILE IN BACKGROUND
           // Create the LeetCode solutions repo if it does not exist
           // Checks if the repo exists
-          await fetch(`https://api.github.com/repos/${github_username}/${github_repo}`)
-          .then(response => {
+          await fetch(`https://api.github.com/repos/${github_username}/${github_repo}`,
+            {
+              headers: {
+              Authorization: `Bearer ${github_authToken}`,
+              'Content-Type': 'application/json',
+            }
+          }).then(response => {
             console.log("Checking if repo exists: ", response);
                   
             if (response.status === 404){
@@ -195,10 +201,15 @@ chrome.webRequest.onCompleted.addListener(
                 }
               })
       
+            } else if (response.status === 401){
+              // Bad auth token
+              chrome.storage.sync.set({"error_bad-auth-token": 1})
+              .then(chrome.runtime.openOptionsPage());
             } else if (!response.ok){
               // Unknown when checking if repo exists
               throw new Error("Failed to check repo existence.");
             } else {
+              chrome.storage.sync.set({"error_bad-auth-token": 0});
               console.log("Repo exists.");
             }
           }).then(
