@@ -25,7 +25,11 @@ const langExts = {
   "Racket": ".rkt",
   "Erlang": ".erl",
   "Elixir": ".ex",
-  "Dart": ".dart"
+  "Dart": ".dart",
+  "Pandas": ".py",
+  "MySQL": ".sql",
+  "MS SQL Server": ".sql",
+  "Oracle": ".pls"
 }
 
 // On extension install, open the options page and set some defaults
@@ -72,22 +76,23 @@ chrome.webRequest.onCompleted.addListener(
 
     // Stores the URL currently listened to
     newUrl = details.url;
+    console.log("hi", newUrl);
 
     // Check if the request is already being intercepted
     // Prevents an infinite loop
-    if (details.initiator === chrome.runtime.id || newUrl === lastUrl) {
+    if (details.initiator === chrome.runtime.id || newUrl === lastUrl || newUrl.startsWith("https://leetcode.com/contest")) { 
       return;
     }
+
 
     // Get the response headers
     // Used to see if the current submission check is the last (by checking content encoding)
     var responseHeaders = details["responseHeaders"];
-
+    
     // If this is the last submission check, update the latest URL to end the listener and store the relevant submission data
     if (responseHeaders.some(header => header.name === "content-encoding" && header.value === "br")) {
       lastUrl = newUrl; // Update lastUrl to stop an infinite loop
       const response = await fetch(details.url); // Fetch the data stored at the listened-to link
-
 
       // Get the leetcode problem name
       await fetch('https://leetcode.com/graphql/', {
@@ -114,7 +119,7 @@ chrome.webRequest.onCompleted.addListener(
         // Process the response data
         console.log(leetcode_URL_problemName,"\n", data)
         const questionTitle = data.data.question.questionTitle;
-        console.log('Question Title:', questionTitle);
+        console.log('Question Title:', data.data.question.questionTitle);
         leetcode_problemName = questionTitle;
       })
       .catch(error => {
