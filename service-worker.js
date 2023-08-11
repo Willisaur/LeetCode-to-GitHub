@@ -76,11 +76,11 @@ chrome.webRequest.onCompleted.addListener(
 
     // Stores the URL currently listened to
     newUrl = details.url;
-    console.log("hi", newUrl);
+    console.log("newUrl:", newUrl);
 
     // Check if the request is already being intercepted
     // Prevents an infinite loop
-    if (details.initiator === chrome.runtime.id || newUrl === lastUrl || newUrl.startsWith("https://leetcode.com/contest")) { 
+    if (details.initiator === chrome.runtime.id || newUrl === lastUrl || details.url.startsWith("https://leetcode.com/contest")) { 
       return;
     }
 
