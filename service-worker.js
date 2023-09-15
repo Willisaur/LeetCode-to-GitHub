@@ -216,9 +216,13 @@ chrome.webRequest.onCompleted.addListener(
           })
   
         } else if (response.status === 401){
+          console.log("401 response:", response)
           // Bad auth token
-          chrome.storage.sync.set({"error_bad-auth-token": 1})
-          .then(chrome.runtime.openOptionsPage());
+          console.log("Auth token is invalid.")
+          chrome.storage.sync.set({"error_bad-auth-token": 1}).then(() => {
+            chrome.runtime.openOptionsPage();
+          });
+          
         } else if (!response.ok){
           // Unknown error when checking if repo exists
           throw new Error("Failed to check repo existence.");
@@ -261,7 +265,7 @@ chrome.webRequest.onCompleted.addListener(
                 })
                 .then(response => {
                   if (!response.ok) {
-                    throw new Error('Failed to commit changes');
+                    throw new Error('Failed to commit changes', response);
                   }
                   return response.json();
                 })

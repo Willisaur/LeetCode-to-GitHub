@@ -83,6 +83,12 @@ document.getElementById('options-form').addEventListener('submit', (event) => {
         // Save token (to storage and placeholder)
         chrome.storage.sync.set( {"github-token": github_token} );
         document.getElementById('github-token').placeholder = "•".repeat(github_token.length);
+        chrome.storage.sync.set( {"error_bad-auth-token": 0} );
+      } else if (storage["error_bad-auth-token"] === 1) { // the last token was invalid; must display error
+        const errorMessage = document.createElement('p');
+        errorMessage.textContent = "Auth token is invalid. Please ensure it has not expired or try regenerating it.";
+        errorMessages.appendChild(errorMessage);  
+        console.log("error_bad-auth-token");
       }
       // do nothing otherwise (it is equal to the last submission or empty)
 
@@ -91,12 +97,6 @@ document.getElementById('options-form').addEventListener('submit', (event) => {
         chrome.storage.sync.set( {"commit-preview-checkbox": preview_checkbox } );
       }
       // do nothing otherwise (if it is equal to the last checkbox)
-
-      if (storage["error_bad-auth-token"] === 1){
-        const errorMessage = document.createElement('p');
-        errorMessage.textContent = "Auth token is invalid. Please ensure it has not expired or try regenerating it.";
-        errorMessages.appendChild(errorMessage);  
-      }
 
       // If there are no errors, proceed with saving settings and provide success feedback
       if (errorMessages.childElementCount === 0) {
