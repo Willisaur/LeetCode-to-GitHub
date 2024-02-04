@@ -17,6 +17,6 @@ A GitHub authentication token is required. This can be done by going to profile 
 All LeetCode problems are separated by folders, and solutions are in each folder and separated by languages. To view submission statistics, look at the extended commit description.
 
 ## Thank you
-I hope this helps you boost your coding portfolio and boast your dedication to mastering technical interviews! :%29
+I hope this helps you boost your coding portfolio and boast your dedication to mastering technical interviews! :)
 I'd love to hear about how this has helped you!
 If it really helped you a lot, please consider donating to me on PayPal or connecting with me on LinkedIn/GitHub. Thank you!
