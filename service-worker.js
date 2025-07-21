@@ -126,15 +126,17 @@ chrome.webRequest.onCompleted.addListener(
     });
 
     let leetcodeProblemName = ""; // "human readable" title
+    let leetcodeProblemFrontendId = "";
     try {
       const response = await fetch('https://leetcode.com/graphql/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          operationName: 'consolePanelConfig',
+          operationName: 'questionDetail',
           query: `
-            query consolePanelConfig($titleSlug: String!) {
+            query questionDetail($titleSlug: String!) {
               question(titleSlug: $titleSlug) {
+                questionFrontendId
                 questionTitle
               }
             }
@@ -148,7 +150,9 @@ chrome.webRequest.onCompleted.addListener(
 
       if (data?.data?.question?.questionTitle) {
         leetcodeProblemName = data.data.question.questionTitle;
+        leetcodeProblemFrontendId = data.data.question.questionFrontendId;
         console.info("Fetched question title: ", leetcodeProblemName);
+        console.info("Fetched question frontend ID: ", leetcodeProblemFrontendId);
       } else {
         console.error("Aborting: Question title not found in response: ", data);
         return;
@@ -331,7 +335,7 @@ async function getGithubSettings() {
 function getSubmissionStats(data, problemName) {
   console.info("Parsing submission stats");
 
-  const questionId = data["question_id"];
+  const questionId = data["question_id"]; // leetcode_questionFrontendId ?? data["question_id"];
   const lang = data["pretty_lang"];
   const runtimePercentile = Number(data["runtime_percentile"]).toFixed(2);
   const runtime = data["status_runtime"];
