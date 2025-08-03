@@ -3,10 +3,9 @@ const STORAGE_GITHUB_USERNAME = "github-username"
 const STORAGE_GITHUB_REPO = "github-repo-name"
 const STORAGE_GITHUB_TOKEN = "github-token"
 
-const STORAGE_SETTINGS_AUTOCOMMIT = "commit-preview-checkbox"
 const STORAGE_SETTINGS_ERROR_AUTH_TOKEN = "error_bad-auth-token"
 
-const langExts = {
+const LANGUAGE_FILE_EXTENSIONS = {
   "C++": ".cpp",
   "Java": ".java",
   "Python": ".py",
@@ -32,8 +31,22 @@ const langExts = {
   "Oracle": ".pls"
 }
 
+const submissionDetailsMap = new Map();
+const SUBMISSION_DETAILS_TTL = 60 * 1000; // 1 minute
 
-// event listeners
+
+// background jobs, event listeners
+function cleanUpSubmissionDetailsMap(){
+  for (const [key, value] of submissionDetailsMap.entries()) {
+    if (Date.now() - value.timestamp > SUBMISSION_TTL) {
+      submissionDetailsMap.delete(key);
+    }
+  }
+}
+
+setInterval(cleanUpSubmissionDetailsMap, SUBMISSION_DETAILS_TTL);
+
+
 chrome.runtime.onInstalled.addListener(function(details) {
   // On extension install, open the options page and set some defaults
   if (details.reason === 'install') {
@@ -41,15 +54,15 @@ chrome.runtime.onInstalled.addListener(function(details) {
       "github-username" : "", 
       STORAGE_GITHUB_REPO : "LeetCode-Solutions", 
       STORAGE_GITHUB_TOKEN : "" , 
-      STORAGE_SETTINGS_AUTOCOMMIT : false, 
       STORAGE_SETTINGS_ERROR_AUTH_TOKEN: 0
     }).then(chrome.runtime.openOptionsPage());
   }
 });
 
+
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
-    // Listen for when the submit button's request is sent to grab the user's solution code and the leetcode problem name
+    // On submission, intercept the user's solution code and the leetcode problem name
     const decoder = new TextDecoder("utf-8");
     const rawBytes = details.requestBody.raw[0].bytes;
     const uint8Arr = new Uint8Array(rawBytes);
@@ -61,10 +74,10 @@ chrome.webRequest.onBeforeRequest.addListener(
     console.debug("LeetCode submission request body:", requestBody);
     console.debug(`Submission URL: ${details.url} | Problem slug: ${leetcodeUrlProblemName}`);
 
-    chrome.runtime.sendMessage({
-      type: "leetcodeSubmission",
-      submittedCode,
-      leetcodeUrlProblemName
+    submissionDetailsMap.set(details.requestId, {
+      submittedCode: submittedCode,
+      leetcodeUrlProblemName: leetcodeUrlProblemName,
+      timestamp: Date.now()
     });
   },
   {
@@ -75,233 +88,31 @@ chrome.webRequest.onBeforeRequest.addListener(
   ["requestBody"]
 );
 
+
 chrome.webRequest.onCompleted.addListener(
   async function (details) {
     // Check to see if the user's solution was accepted and grab relevant submission data
-    const newUrl = details.url;
-
-    // Prevent callback hell by seeing if the request is already being intercepted
-    if (newUrl === lastUrl || details.url.startsWith("https://leetcode.com/contest")) { 
-      console.info("Aborting: Request already being intercepted.");
+    if (!hasCompletedPolling(details)){
       return;
     }
-
-    // Ensure code solution submission polling is complete
-    var responseHeaders = details["responseHeaders"];
-    console.debug("Headers:", responseHeaders)
     
-    if (!responseHeaders.some((header) => (header.name === "content-encoding" && header.value === "br"))) {
-      console.info("Awaiting polling completion...");
-      return; 
-    }
-
-    lastUrl = newUrl;
-    const response = await fetch(details.url);
-
-    if (!response.ok){
-      console.error("Response error when fetching LeetCode submission details. Please try again later.", response.status);
-    }
-
-    const data = await response.json();
-    console.debug("User solution submission data:", data);
-
-    // Stop if the user ran code instead of submitting it
-    if (data.task_name !== "judger.judgetask.Judge" || data.status_msg !== "Accepted"){
-      console.info("Aborting: User ran code instead of submitting.");
+    const { submittedCode, leetcodeUrlProblemName } = getSubmissionData(details);
+    if (!submittedCode || !leetcodeUrlProblemName){
       return;
     }
 
-    // Receive submittedCode and leetcodeUrlProblemName via message
-    let submittedCode = "";
-    let leetcodeUrlProblemName = ""; // kabob-case
-    await new Promise((resolve) => {
-      chrome.runtime.onMessage.addListener(function handler(message) {
-        if (message.type === "leetcodeSubmission") {
-          submittedCode = message.submittedCode;
-          leetcodeUrlProblemName = message.leetcodeUrlProblemName;
-          chrome.runtime.onMessage.removeListener(handler);
-          resolve();
-        }
-      });
-    });
-
-    let leetcodeProblemName = ""; // "human readable" title
-    let leetcodeProblemFrontendId = "";
-    try {
-      const response = await fetch('https://leetcode.com/graphql/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          operationName: 'questionDetail',
-          query: `
-            query questionDetail($titleSlug: String!) {
-              question(titleSlug: $titleSlug) {
-                questionFrontendId
-                questionTitle
-              }
-            }
-          `,
-          variables: { titleSlug: leetcodeUrlProblemName },
-        }),
-      });
-
-      const data = await response.json();
-      console.debug("GraphQL response for question: ", data);
-
-      if (data?.data?.question?.questionTitle) {
-        leetcodeProblemName = data.data.question.questionTitle;
-        leetcodeProblemFrontendId = data.data.question.questionFrontendId;
-        console.info("Fetched question title: ", leetcodeProblemName);
-        console.info("Fetched question frontend ID: ", leetcodeProblemFrontendId);
-      } else {
-        console.error("Aborting: Question title not found in response: ", data);
-        return;
-      }
-    } catch (error) {
-      console.error("Aborting: Error fetching problem name from GraphQL: ", error);
-      return;
+    const { leetcodeProblemName, leetcodeProblemFrontendId } = await getProblemDetails(leetcodeUrlProblemName);
+    if (!leetcodeProblemName || !leetcodeProblemFrontendId){
+      return
     }
 
-    if (!(data["status_code"] === 10 && data["status_msg"] === "Accepted" && data["state"] === "SUCCESS" && data["memory_percentile"] !== null && data["runtime_percentile"] !== null)) {
-      console.info("Aborting: User solution incorrect.")
-      return;
-    }
-
-    const { githubUsername, githubRepo, githubAuthToken, optionsAutocommit } = await getGithubSettings();
-    const { questionId, lang, runtimePercentile, runtime, memoryPercentile, memory, filePath } = getSubmissionStats(data, leetcodeProblemName);
-
-    // Commit path (folders + filename), message, content, and extended description
-    let message = // newline-sensitive; format is commitName\n\ncommitDescription
-      `${lang} Solution
-
-      Submission Statistics:
-      Question #: ${questionId}
-      Language: ${lang}
-      Runtime: ${runtime}
-      Runtime percentile: ${runtimePercentile}
-      Memory: ${memory} MB
-      Memory percentile: ${memoryPercentile}`;
-    let content = btoa(submittedCode);
-    
-    console.debug("Solution code:\n", submittedCode);
-    console.debug("Solution language:\n", lang, langExts[lang]);
-    console.debug("GitHub info:\n", githubUsername, githubRepo);
+    const { githubUsername, githubRepo, githubAuthToken } = await getGithubSettings();
+    const { questionId, codingLanguage, runtimePercentile, runtime, memoryPercentile, memory } = parseSubmissionStatistics(data, leetcodeProblemName);
+    const { filePath, message, content } = createCommitData(codingLanguage, questionId, runtime, runtimePercentile, memory, memoryPercentile, submittedCode);
 
     // USING THE API TO CREATE A REPO AND FILE IN BACKGROUND
-    // Create the LeetCode solutions repo if it does not exist
-    // Checks if the repo exists
-    await fetch(`https://api.github.com/repos/${githubUsername}/${githubRepo}`,
-      {
-        headers: {
-        Authorization: `Bearer ${githubAuthToken}`,
-        'Content-Type': 'application/json',
-      }
-    }).then(response => {
-      console.log("Checking if repo exists...");
-            
-      if (response.status === 404){
-        // If the repo doesn't exist, try to create it
-        console.log("Repo not found. Creating repo...");
-
-        createGithubRepo(githubAuthToken, githubRepo);
-
-      } else if (response.status === 401){
-        // Bad auth token
-        console.log("Auth token is invalid.")
-        chrome.storage.sync.set({STORAGE_SETTINGS_ERROR_AUTH_TOKEN: 1}).then(() => {
-          chrome.runtime.openOptionsPage();
-        });
-        
-      } else if (!response.ok){
-        // Unknown error when checking if repo exists
-        throw new Error("Failed to check repo existence.");
-      } else {
-        chrome.storage.sync.set({STORAGE_SETTINGS_ERROR_AUTH_TOKEN: 0});
-        console.log("Repo exists.");
-      }
-    }).then(
-      // If the repo exists, check if the file exists (meaning a solution was already saved for the problem)
-      fetch(`https://api.github.com/repos/${githubUsername}/${githubRepo}/contents/${filePath}`)
-      .then(response => {
-
-        if (response.status === 404) {
-          // If the file doesn't exist in GitHub, create the file -- no need to look for file details
-          console.log('Solution file does not exist. Creating file...');
-
-            if (!optionsAutocommit){
-              chrome.storage.local.set({
-                "file-path": decodeURIComponent(filePath),
-                "file-content": atob(content),
-                "commit-message": message.split('\n\n')[0],
-                "commit-description": message.split('\n\n')[1].replace(/^\s+/gm, ''),
-                "commit-hash": ""
-              }).then(
-                // Open the editor
-                chrome.tabs.create({ url: "./editor/editor.html" })
-              );
-            } else {
-              // Automatically create the file 
-              fetch(`https://api.github.com/repos/${githubUsername}/${githubRepo}/contents/${filePath}`, {
-                method: 'PUT',
-                headers: {
-                  Authorization: `Bearer ${githubAuthToken}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  message: message, // Provide a commit message and extended description
-                  content: content, // Replace with the base64-encoded content of the file
-                }),
-              })
-              .then(response => {
-                if (!response.ok) {
-                  throw new Error('Failed to commit changes', response);
-                }
-                return response.json();
-              })
-              .then(data => {
-                console.log('Changes committed successfully; file created.');
-                console.log('Commit details:', data);
-              })
-            }
-          
-        } else if (response.ok){
-          // If the file does exist in GitHub, get the file details to get the SHA and then commit to the fole
-          console.log('Solution file exists. Getting file information...');
-
-          // Retrieve the current file content (its SHA is what we need)
-          fetch(`https://api.github.com/repos/${githubUsername}/${githubRepo}/contents/${filePath}`, {
-            headers: {
-              Authorization: `Bearer ${githubAuthToken}`,
-            },
-          }).catch(error => {
-            console.error('Failed to retrieve file content:', error);
-          })
-          .then(response => response.json())
-          .then(data => {
-            if (!optionsAutocommit){
-              // Save file and commit details to local storage to load in the editor
-              chrome.storage.local.set({
-                "file-path": decodeURIComponent(filePath),
-                "file-content": atob(content),
-                "commit-message": message.split('\n\n')[0],
-                "commit-description": message.split('\n\n')[1].replace(/^\s+/gm, ''),
-                "commit-hash": data.sha
-              }).then(
-                // Open the editor
-                chrome.tabs.create({ url: "./editor/editor.html"})
-              );
-            } else {
-              commitToExistingFile({ githubUsername, githubRepo, filePath, githubAuthToken, message, content, sha });
-            }
-          }).catch(error => {
-            console.error('Failed to commit to existing file:', error);
-          });
-        } else {
-          throw new Error('Failed to check file existence. Not committing to GitHub.');
-        }
-
-      })
-    );
+    await handleRepoExistence(githubUsername, githubRepo, githubAuthToken);
+    await handleFileExistence(githubUsername, githubRepo, filePath, githubAuthToken, message, content);
   },
   {
     urls: [
@@ -313,56 +124,213 @@ chrome.webRequest.onCompleted.addListener(
 
 
 // helper functions
+// function isCallbackHell(lastUrl, newUrl){
+//   // Prevent callback hell by seeing if the request is already being intercepted
+//   if (newUrl === lastUrl || newUrl.startsWith("https://leetcode.com/contest")) { 
+//     console.debug("Aborting: Request already being intercepted.");
+//     return false;
+//   }
+
+//   console.info("Intercepting submission request.");
+//   return true;
+// }
+
+
+function hasCompletedPolling(details){
+  // // Ignore contest submissions for now
+  // if (details.url.startsWith("https://leetcode.com/contest")){
+  //   return false;
+  // }
+
+  // Ensure code solution submission polling is complete
+  const responseHeaders = details["responseHeaders"];
+  console.debug("Headers:", responseHeaders)
+  
+  if (!responseHeaders.some((header) => (header.name === "content-encoding" && header.value === "br"))) {
+    console.debug("Awaiting polling completion...");
+    return false;
+  }
+  
+  console.info("Polling complete.");
+  return true;
+}
+
+
+async function getSubmissionData(details){
+  console.info("Polling complete. Gathering submission details.");
+  
+  const submission = submissionDetailsMap.get(details.requestId);
+
+  if (!submission) {
+    console.error("No submission data found for requestId:", details.requestId);
+    return { submittedCode: undefined, leetcodeUrlProblemName: undefined };
+  }
+
+  const { submittedCode, leetcodeUrlProblemName } = submission;
+
+  return { submittedCode, leetcodeUrlProblemName };
+  
+  // // Stop if the user ran code instead of submitting it
+  // if (data.task_name !== "judger.judgetask.Judge" || data.status_msg !== "Accepted"){
+  //   console.info("Aborting: User ran code instead of submitting.");
+  //   return;
+  // }
+}
+
+
+async function getProblemDetails(leetcodeUrlProblemName){
+  let leetcodeProblemName = ""; // "human readable" title
+  let leetcodeProblemFrontendId = "";
+
+  try {
+    const response = await fetch('https://leetcode.com/graphql/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        operationName: 'questionDetail',
+        query: `
+          query questionDetail($titleSlug: String!) {
+            question(titleSlug: $titleSlug) {
+              questionFrontendId
+              questionTitle
+            }
+          }
+        `,
+        variables: { titleSlug: leetcodeUrlProblemName },
+      }),
+    });
+
+    const data = await response.json();
+    console.debug("GraphQL response for question: ", data);
+    
+    if (!(data["status_code"] === 10 && 
+          data["status_msg"] === "Accepted" && 
+          data["state"] === "SUCCESS" && 
+          data["memory_percentile"] !== null && 
+          data["runtime_percentile"] !== null)) {
+      throw new Error("Aborting: user solution incorrect.");
+    }
+    
+    leetcodeProblemName = data?.data?.question?.questionTitle;
+    leetcodeProblemFrontendId = data?.data?.question?.questionFrontendId;
+    console.info("Fetched question title: ", leetcodeProblemName);
+    console.info("Fetched question frontend ID: ", leetcodeProblemFrontendId);
+  } catch (error) {
+    console.error("Aborting: Error parsing problem details: ", error);
+  }
+  
+  return { leetcodeProblemName, leetcodeProblemFrontendId }
+}
+
+
 async function getGithubSettings() {
   console.info("Getting Github settings");
 
   const settings = await chrome.storage.sync.get([
     STORAGE_GITHUB_USERNAME,
     STORAGE_GITHUB_REPO,
-    STORAGE_GITHUB_TOKEN,
-    STORAGE_SETTINGS_AUTOCOMMIT
+    STORAGE_GITHUB_TOKEN
   ]);
 
   return {
     githubUsername: settings[STORAGE_GITHUB_USERNAME],
     githubRepo: settings[STORAGE_GITHUB_REPO],
-    githubAuthToken: settings[STORAGE_GITHUB_TOKEN],
-    settingsAutocommit: settings[STORAGE_SETTINGS_AUTOCOMMIT]
+    githubAuthToken: settings[STORAGE_GITHUB_TOKEN]
   };
 }
 
 
-function getSubmissionStats(data, problemName) {
+function parseSubmissionStatistics(data) {
   console.info("Parsing submission stats");
 
   const questionId = data["question_id"]; // leetcode_questionFrontendId ?? data["question_id"];
-  const lang = data["pretty_lang"];
+  const codingLanguage = data["pretty_lang"];
   const runtimePercentile = Number(data["runtime_percentile"]).toFixed(2);
   const runtime = data["status_runtime"];
   const memoryPercentile = Number(data["memory_percentile"]).toFixed(2);
   const memory = data["memory"] / 1000000;
-  const filePath = encodeURIComponent(`${questionId}. ${problemName}/Solution${langExts[lang]}`);
 
   return {
     questionId,
-    lang,
+    codingLanguage,
     runtimePercentile,
     runtime,
     memoryPercentile,
-    memory,
-    filePath
+    memory
   };
+}
+
+
+function createCommitData(codingLanguage, questionId, runtime, runtimePercentile, memory, memoryPercentile){
+  const filePath = encodeURIComponent(`${questionId}. ${problemName}/Solution${LANGUAGE_FILE_EXTENSIONS[codingLanguage]}`);
+  const message = // newline-sensitive; format is commitName\n\ncommitDescription
+    `${codingLanguage} Solution
+
+    Submission Statistics:
+    Question #: ${questionId}
+    Language: ${codingLanguage}
+    Runtime: ${runtime}
+    Runtime percentile: ${runtimePercentile}
+    Memory: ${memory} MB
+    Memory percentile: ${memoryPercentile}`;
+  const content = btoa(submittedCode);
+  
+  console.debug("Solution code:\n", submittedCode);
+  console.debug("Solution language:\n", codingLanguage, LANGUAGE_FILE_EXTENSIONS[codingLanguage]);
+  console.debug("GitHub info:\n", githubUsername, githubRepo);
+
+  return {filePath, message, content};
+}
+
+
+async function handleRepoExistence(githubUsername, githubRepo, githubAuthToken){
+  try {
+    const response = await fetch(
+      `https://api.github.com/repos/${githubUsername}/${githubRepo}`,
+      {
+        headers: {
+        Authorization: `Bearer ${githubAuthToken}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    switch (response.status) {
+      case 404:
+        console.log("Repo not found.");
+        createGithubRepo(githubAuthToken, githubRepo); // todo: check contract here and refactor
+        break;
+      
+      case 401:
+        console.log("Auth token is invalid.");
+        chrome.storage.sync.set({STORAGE_SETTINGS_ERROR_AUTH_TOKEN: 1}).then(() => {
+          chrome.runtime.openOptionsPage();
+        });
+        break;
+
+      case !response.ok:
+        console.error(`Unknown error when determining repo existence. Error: ${error}`);
+        return;
+
+      default:
+        chrome.storage.sync.set({STORAGE_SETTINGS_ERROR_AUTH_TOKEN: 0});
+        console.log("Repo exists.");
+        break;
+      }
+  } catch (error) {
+    console.error(`Failed checking repo existence. Error: ${error}`);
+  }
 }
 
 
 /**
  * Creates a new GitHub repository.
- * @param {string} githubAuthToken - GitHub authentication token
- * @param {string} githubRepo - Repository name
- * @returns {Promise<Response>} - The fetch response
- */
-function createGithubRepo(githubAuthToken, githubRepo) {
-  return fetch('https://api.github.com/user/repos', {
+ * @param {string} githubAuthToken
+ * @param {string} githubRepo
+ * @returns {Promise<Response>}
+*/
+async function createGithubRepo(githubAuthToken, githubRepo) {
+  console.log("Creating Github repo");
+  return await fetch('https://api.github.com/user/repos', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${githubAuthToken}`,
@@ -387,9 +355,23 @@ function createGithubRepo(githubAuthToken, githubRepo) {
   });
 }
 
+function getSha({githubUsername, githubRepo, filePath, githubAuthToken}){
+  try {
+    const response = fetch(`https://api.github.com/repos/${githubUsername}/${githubRepo}/contents/${filePath}`, {
+      headers: {
+        Authorization: `Bearer ${githubAuthToken}`
+      }
+    });
+    
+    return response.json().sha;
+  } catch (error) {
+    console.error(`Failed to retrieve sha from existing solution file. Error: ${error}`);
+    return "";
+  }
+}
 
 /**
- * Commits changes to an existing file in a GitHub repository.
+ * Commits changes to an new or existing file in a GitHub repository.
  * @param {string} githubUsername
  * @param {string} githubRepo
  * @param {string} filePath
@@ -398,26 +380,60 @@ function createGithubRepo(githubAuthToken, githubRepo) {
  * @param {string} content
  * @param {string} sha
  */
-function commitToExistingFile({ githubUsername, githubRepo, filePath, githubAuthToken, message, content, sha }) {
+function createGithubFile({ githubUsername, githubRepo, filePath, githubAuthToken, message, content, sha = "" }){
+  let body = {
+    message: message, // Provide a commit message and extended description
+    content: content // Replace with the base64-encoded content of the file
+  };
+  
+  if (sha){
+    body.sha = sha; // SHA of the current Github file commit
+  }
 
-
-  return fetch(`https://api.github.com/repos/${githubUsername}/${githubRepo}/contents/${filePath}`, {
-    method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${githubAuthToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      message: message, // Commit message and extended description
-      content: content, // Base64-encoded file content
-      sha: sha, // SHA of the current Github file commit
-    }),
-  })
-    .then(response => response.json())
-    .then(data => {
-      console.info('Committed to existing file:', data);
-      return data;
+  try {
+    const response = fetch(`https://api.github.com/repos/${githubUsername}/${githubRepo}/contents/${filePath}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${githubAuthToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
     });
+
+    console.log(`Committed solution file. Details: ${response.json()}`);
+    
+  } catch (error) {
+    console.error(`Could not commit solution file. Error: ${error}`);
+  }
 }
 
+async function handleFileExistence(githubUsername, githubRepo, filePath, githubAuthToken, message, content){
+  try {
+    const response = await fetch(`https://api.github.com/repos/${githubUsername}/${githubRepo}/contents/${filePath}`);
+    
+    switch (response.status) {
+      case 404:
+        console.log("Solution file does not exist.");
+        createGithubFile(githubUsername, githubRepo, filePath, githubAuthToken, message, content);
+        break;
+    
+      case response.ok:
+        console.log("Solution file exists.");
+
+        const sha = getSha({githubUsername, githubRepo, filePath, githubAuthToken});
+      
+        if (!sha){
+          return;
+        }
+        createGithubFile({ githubUsername, githubRepo, filePath, githubAuthToken, message, content, sha }); // todo: check contract
+        break;
+        
+      default:
+        throw new Error("Failed checking solution file existence.");
+    }
+
+  } catch (error) {
+    console.error(`Error thrown when handling file existence. Error: ${error}`);
+  }
+}
 
