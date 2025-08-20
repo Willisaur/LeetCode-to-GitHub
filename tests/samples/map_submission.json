@@ -1,0 +1,5 @@
+{
+    "submittedCode": "class Solution:\n    def twoSum(self, nums: List[int], target: int) -> List[int]:\n        # since you know the target, calculate the complement\n        # the complement is the key, and the index is the value\n        \n        lookup = dict()\n\n        for i in range(len(nums)):\n            if nums[i] in lookup:\n                return [lookup[nums[i]], i]\n            lookup[target - nums[i]] = i",
+    "leetcodeUrlProblemName": "two-sum",
+    "timestamp": 1755316017528
+}

@@ -1,0 +1,46 @@
+[
+    {
+        "name": "date",
+        "value": "Sat, 16 Aug 2025 02:26:22 GMT"
+    },
+    {
+        "name": "content-type",
+        "value": "application/json"
+    },
+    {
+        "name": "content-encoding",
+        "value": "br"
+    },
+    {
+        "name": "vary",
+        "value": "Cookie, Authorization"
+    },
+    {
+        "name": "x-frame-options",
+        "value": "DENY"
+    },
+    {
+        "name": "strict-transport-security",
+        "value": "max-age=15552000; includeSubDomains; preload"
+    },
+    {
+        "name": "content-security-policy",
+        "value": "frame-ancestors 'self' https://*.leetcode.com https://leetcode.com https://www.growingio.com https://challenges.cloudflare.com"
+    },
+    {
+        "name": "cf-cache-status",
+        "value": "DYNAMIC"
+    },
+    {
+        "name": "x-content-type-options",
+        "value": "nosniff"
+    },
+    {
+        "name": "server",
+        "value": "cloudflare"
+    },
+    {
+        "name": "cf-ray",
+        "value": "96fd7c88ef95dab8-IAD"
+    }
+]

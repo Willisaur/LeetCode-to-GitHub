@@ -1,0 +1,57 @@
+{
+    "status_code": 10,
+    "lang": "python3",
+    "run_success": true,
+    "status_runtime": "0 ms",
+    "memory": 17964000,
+    "display_runtime": "0",
+    "code_answer": [
+        "[0,1]",
+        "[1,2]",
+        "[0,1]",
+        ""
+    ],
+    "code_output": [],
+    "std_output_list": [
+        "",
+        "",
+        "",
+        ""
+    ],
+    "elapsed_time": 74,
+    "task_finish_time": 1755316545919,
+    "task_name": "judger.runcodetask.RunCode",
+    "expected_status_code": 10,
+    "expected_lang": "cpp",
+    "expected_run_success": true,
+    "expected_status_runtime": "3",
+    "expected_memory": 8340000,
+    "expected_display_runtime": "0",
+    "expected_code_answer": [
+        "[0,1]",
+        "[1,2]",
+        "[0,1]",
+        ""
+    ],
+    "expected_code_output": [],
+    "expected_std_output_list": [
+        "",
+        "",
+        "",
+        ""
+    ],
+    "expected_elapsed_time": 14,
+    "expected_task_finish_time": 1755316545919,
+    "expected_task_name": "judger.interprettask.Interpret",
+    "correct_answer": true,
+    "compare_result": "111",
+    "total_correct": 3,
+    "total_testcases": 3,
+    "runtime_percentile": null,
+    "status_memory": "18 MB",
+    "memory_percentile": null,
+    "pretty_lang": "Python3",
+    "submission_id": "runcode_1755316543.1101334_fIjaEuOP5X",
+    "status_msg": "Accepted",
+    "state": "SUCCESS"
+}
