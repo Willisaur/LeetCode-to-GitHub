@@ -5,14 +5,12 @@
   "manifest_version": 3,
   "action": {
     "default_popup": "./popup/popup.html",
-    "default_icon": "./icons/icon128.png"
+    "default_icon": "./icons/L2G_128.png"
   },
   "options_page": "./options/options.html",
   "icons": {
-    "128": "./icons/icon128.png",
-    "48": "./icons/icon48.png",
-    "32": "./icons/icon32.png",
-    "16": "./icons/icon16.png"
+    "128": "./icons/L2G_128.png",
+    "16": "./icons/L2G_16.png"
   },
   "permissions": [
     "background",
