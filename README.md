@@ -18,5 +18,4 @@ All LeetCode problems are separated by folders, and solutions are in each folder
 
 ## Thank you
 I hope this helps you boost your coding portfolio and boast your dedication to mastering technical interviews! :)
-I'd love to hear about how this has helped you!
-If it really helped you a lot, please consider donating to me on PayPal or connecting with me on LinkedIn/GitHub. Thank you!
+If it really helped you a lot, please consider donating to me on PayPal or following me on GitHub. Thank you!
