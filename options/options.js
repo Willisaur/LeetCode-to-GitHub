@@ -108,33 +108,3 @@ document.getElementById("options-form").addEventListener("submit", (event) => {
     }
   );
 });
-
-
-///// Delete repo token /////
-document.getElementById("delete-token-button").addEventListener("click", function() {
-  const github_token = document.getElementById("github-token").value;
-  const tokenStatus = document.getElementById("delete-token");
-
-  chrome.storage.sync.get({STORAGE_GITHUB_TOKEN : "" }, function (storage)
-  {
-    if (storage[STORAGE_GITHUB_TOKEN]){ // Token is not blank in storage
-      // Delete the token
-      chrome.storage.sync.set( {STORAGE_GITHUB_TOKEN: ""} );
-      document.getElementById("github-token").value = "";
-      document.getElementById("github-token").placeholder = "ghp_... or github_pat_...";
-      
-      // Print deletion status
-      tokenStatus.innerText = "Token deleted!";
-  
-      // Clear the status text
-      setTimeout(() => {
-        tokenStatus.innerText = "";
-      }, 3000);
-    }
-    else if (github_token){
-      // Remove whatever else is typed in if the token was already deleted
-      document.getElementById("github-token").value = "";
-    }
-  });
-});
-
