@@ -85,7 +85,7 @@ chrome.webRequest.onBeforeRequest.addListener(
   },
   {
     urls: [
-      "*://leetcode.com/problems/*/submit/"
+      "https://leetcode.com/problems/*/submit/"
     ]
   },
   ["requestBody"]
@@ -127,7 +127,7 @@ chrome.webRequest.onCompleted.addListener(
   },
   {
     urls: [
-      "*://leetcode.com/submissions/detail/*/check/"
+      "https://leetcode.com/submissions/detail/*/check/"
     ]
   },
   ["responseHeaders"]
@@ -147,11 +147,6 @@ function isCallbackHell(url){
 
 
 function hasCompletedPolling(details){
-  // Ignore contest submissions for now
-  if (details.url.startsWith("https://leetcode.com/contest")){
-    return false;
-  }
-
   // Ensure code solution submission polling is complete
   const responseHeaders = details["responseHeaders"];
   console.debug("Headers:", responseHeaders)

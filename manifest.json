@@ -13,19 +13,14 @@
     "16": "./icons/L2G_16.png"
   },
   "permissions": [
-    "background",
     "storage",
     "webRequest"
   ],
   "host_permissions": [
-    "*://github.com/*",
-    "*://www.linkedin.com/in/willstarling/",
-    "*://paypal.me/willisaur",
-
-    "*://leetcode.com/graphql/",
-    "*://api.github.com/repos/*",
-    "*://leetcode.com/problems/*/*",
-    "*://leetcode.com/submissions/detail/*/check/"
+    "https://api.github.com/*",
+    "https://leetcode.com/graphql/",
+    "https://leetcode.com/problems/*/submit/",
+    "https://leetcode.com/submissions/detail/*/check/"
   ],
   "background": {
     "service_worker": "service-worker.js"
