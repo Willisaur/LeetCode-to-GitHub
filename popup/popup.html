@@ -1,43 +1,46 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
   <head>
-    <title>L2G Popup</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Solution Saver - Popup</title>
     <link rel="stylesheet" href="popup.css">
   </head>
+
   <body>
     <div id="popup-container">
-      <div id="header-container">
-        <h1>LeetCode to GitHub</h1>
-        <p>Not affiliated with LeetCode or GitHub.</p>
-      </div>
-
-
-      <div id="popup-buttons">
-        <!-- <button id="log-in">Log in</button> -->
-        <button id="options">Settings</button>
-        <!-- <button id="help">Help</button> -->
-      </div>
-
-      <div id="social-links-container">
+      <header id="header-container">
+        <h1>Solution Saver</h1>
         <p>
-          Thank you for using my extension!<br>
-          Connect with or support me here:
+          Not affiliated with LeetCode or GitHub.
         </p>
-        <div id="social-links">
-          <div id="github-links">
-            <img src="../icons/GitHub_Logo.png" alt="GitHub Logo">
-            <strong><a>GitHub</a></strong>
-          </div>
-          <div id="linkedin-links">
-            <img src="../icons/LinkedIn_Logo.png" alt="LinkedIn Logo">
-            <strong><a>LinkedIn</a></strong>
-          </div>
-          <div id="paypal-links">
-            <img src="../icons/PayPal_Logo.png" alt="PayPal Logo">
-            <strong><a>PayPal</a></strong>
-          </div>
-        </div>
-      </div>
+      </header>
 
+      <main>
+        <div id="popup-buttons">
+          <a id="options" class="button-like" href="../options/options.html" role="button" aria-label="Open settings">Settings</a>
+        </div>
+
+        <section id="social-links-container">
+          <ul id="social-links">
+            <li class="social-link github">
+              <a href="https://github.com/Willisaur" target="_blank" rel="noopener noreferrer" aria-label="GitHub profile">
+                <img src="../icons/GitHub_Logo.png" alt="" aria-hidden="true">
+              </a>
+            </li>
+            <li class="social-link linkedin">
+              <a href="https://www.linkedin.com/in/willstarling/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn profile">
+                <img src="../icons/LinkedIn_Logo.png" alt="" aria-hidden="true">
+              </a>
+            </li>
+            <li class="social-link paypal">
+              <a href="https://paypal.me/willisaur" target="_blank" rel="noopener noreferrer" aria-label="PayPal">
+                <img src="../icons/PayPal_Logo.png" alt="" aria-hidden="true">
+              </a>
+            </li>
+          </ul>
+        </section>
+      </main>
     </div>
 
     <script src="popup.js"></script>
