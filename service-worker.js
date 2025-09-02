@@ -57,11 +57,12 @@ chrome.runtime.onMessage.addListener(async function(request, sender, sendRespons
 
 
 chrome.runtime.onInstalled.addListener(function(details) {
-  // On extension install, open the options page and set some defaults
   if (details.reason === 'install') {
     chrome.storage.sync.set( {
-      STORAGE_GITHUB_REPO : "LeetCode-Solutions"
-    }).then(chrome.runtime.openOptionsPage());
+      STORAGE_GITHUB_REPO : "LeetCode-Solutions" // default
+    });
+  } else if (details.reason === "update"){
+    // TO DO: add page explaining how to login since it's not intuitive
   }
 });
 
