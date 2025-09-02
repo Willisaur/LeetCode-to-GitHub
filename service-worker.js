@@ -1,10 +1,4 @@
 // constants
-const STORAGE_GITHUB_USERNAME = "github-username"
-const STORAGE_GITHUB_REPO = "github-repo-name"
-const STORAGE_GITHUB_TOKEN = "github-token"
-
-const STORAGE_SETTINGS_ERROR_AUTH_TOKEN = "error_bad-auth-token"
-
 const LANGUAGE_FILE_EXTENSIONS = {
   "C++": ".cpp",
   "Java": ".java",
@@ -49,14 +43,24 @@ function cleanUpSubmissionDetailsMap(){
 setInterval(cleanUpSubmissionDetailsMap, SUBMISSION_DETAILS_TTL);
 
 
+chrome.runtime.onMessage.addListener(async function(request, sender, sendResponse) {
+  if (request.data === "start_auth_flow") {
+    console.log("Starting device auth flow");
+    const { device_code, user_code, expires_in, interval } = await getDeviceCode();
+    chrome.storage.sync.set({ USER_AUTH_CODE: user_code }); // store the auth code to write in the popup
+
+    if (! (await pollForToken(device_code, expires_in, interval))){
+      console.warn("Auth token not found after polling");
+    }
+  }
+});
+
+
 chrome.runtime.onInstalled.addListener(function(details) {
   // On extension install, open the options page and set some defaults
   if (details.reason === 'install') {
     chrome.storage.sync.set( {
-      "github-username" : "", 
-      STORAGE_GITHUB_REPO : "LeetCode-Solutions", 
-      STORAGE_GITHUB_TOKEN : "" , 
-      STORAGE_SETTINGS_ERROR_AUTH_TOKEN: 0
+      STORAGE_GITHUB_REPO : "LeetCode-Solutions"
     }).then(chrome.runtime.openOptionsPage());
   }
 });
@@ -115,15 +119,16 @@ chrome.webRequest.onCompleted.addListener(
       return
     }
 
-    const { githubUsername, githubRepo, githubAuthToken } = await getGithubSettings();
+    const { STORAGE_GITHUB_REPO, STORAGE_GITHUB_TOKEN } = await getGithubSettings();
     const message = createCommitData(codingLanguage, questionId, runtime, runtimePercentile, memory, memoryPercentile, submittedCode);
     const content = btoa(submittedCode);
     const filePath = encodeURIComponent(`${questionId}. ${leetcodeProblemName}/Solution${LANGUAGE_FILE_EXTENSIONS[codingLanguage]}`);
     console.debug("Solution code:\n", submittedCode);
     
     // USING THE API TO CREATE A REPO AND FILE IN BACKGROUND
-    await handleRepoExistence(githubUsername, githubRepo, githubAuthToken);
-    await handleFileExistence(githubUsername, githubRepo, filePath, githubAuthToken, message, content);
+    const username = await getUsername(STORAGE_GITHUB_TOKEN);
+    await handleRepoExistence(username, STORAGE_GITHUB_REPO, STORAGE_GITHUB_TOKEN);
+    await handleFileExistence(username, STORAGE_GITHUB_REPO, filePath, STORAGE_GITHUB_TOKEN, message, content);
   },
   {
     urls: [
@@ -159,7 +164,6 @@ function hasCompletedPolling(details){
   console.info("Polling complete.");
   return true;
 }
-
 
 
 async function getSubmissionData(details){
@@ -222,18 +226,13 @@ async function getGithubSettings() {
   console.info("Getting Github settings");
 
   const settings = await chrome.storage.sync.get([
-    STORAGE_GITHUB_USERNAME,
-    STORAGE_GITHUB_REPO,
-    STORAGE_GITHUB_TOKEN
+    "STORAGE_GITHUB_REPO",
+    "STORAGE_GITHUB_TOKEN"
   ]);
 
-  console.debug("GitHub info:\n", settings[STORAGE_GITHUB_USERNAME], settings[STORAGE_GITHUB_REPO]);
+  console.debug("GitHub info:", settings);
 
-  return {
-    githubUsername: settings[STORAGE_GITHUB_USERNAME],
-    githubRepo: settings[STORAGE_GITHUB_REPO],
-    githubAuthToken: settings[STORAGE_GITHUB_TOKEN]
-  };
+  return settings;
 }
 
 
@@ -288,6 +287,28 @@ function createCommitData(codingLanguage, questionId, runtime, runtimePercentile
 }
 
 
+async function getUsername(githubAuthToken){
+  try {
+    console.log("username token", githubAuthToken)
+    const response = await fetch(
+      `https://api.github.com/user`,
+      {
+        headers: {
+        Authorization: `Bearer ${githubAuthToken}`,
+        'Content-Type': 'application/json',
+      }
+    });
+
+    const data = await response.json();
+    console.debug("Username:", data.login);
+
+    return data.login;
+  } catch (error){
+    console.error("Could not get github username", error);
+  }
+}
+
+
 async function handleRepoExistence(githubUsername, githubRepo, githubAuthToken){
   try {
     const response = await fetch(
@@ -307,9 +328,7 @@ async function handleRepoExistence(githubUsername, githubRepo, githubAuthToken){
       
       case 401:
         console.log("Auth token is invalid.");
-        chrome.storage.sync.set({STORAGE_SETTINGS_ERROR_AUTH_TOKEN: 1}).then(() => {
-          chrome.runtime.openOptionsPage();
-        });
+        chrome.storage.sync.set({STORAGE_GITHUB_TOKEN: ""});
         break;
 
       case !response.ok:
@@ -317,7 +336,6 @@ async function handleRepoExistence(githubUsername, githubRepo, githubAuthToken){
         return;
 
       default:
-        chrome.storage.sync.set({STORAGE_SETTINGS_ERROR_AUTH_TOKEN: 0});
         console.log("Repo exists.");
         break;
       }
@@ -446,4 +464,63 @@ async function handleFileExistence(githubUsername, githubRepo, filePath, githubA
     console.error(`Error thrown when handling file existence. Error: ${error}`);
   }
 }
+
+
+
+async function getDeviceCode(){
+  const response = await fetch("https://github.com/login/device/code?scope=repo read:user&client_id=Ov23limmduLSqcWIZMSd",
+    {
+      method: 'POST', 
+      headers: { 'Accept': 'application/json' }
+    }
+  );
+
+  const data = await response.json();
+  console.debug("Device code from fetch", data);
+  
+  return data;
+}
+
+
+async function pollForToken(device_code, expires_in, interval = 5){
+  const deadline = Date.now() + (expires_in * 1000);
+  const intervalMs = interval * 1000;
+
+  console.log("Polling for auth token...");
+
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(`https://github.com/login/oauth/access_token?client_id=Ov23limmduLSqcWIZMSd&device_code=${device_code}&grant_type=urn:ietf:params:oauth:grant-type:device_code`, {
+        method: "POST",
+        headers: { "Accept": "application/json" }
+      });
+  
+      const data = await response.json();
+      
+      if (!data?.access_token){
+        console.debug("No access token in response... likely awaiting user input", data);
+        await sleep(intervalMs);
+        continue;
+      }
+
+      console.debug("Successfully obtained GitHub access token:", data.access_token, "with scopes", data.scope);
+      chrome.storage.sync.set({ STORAGE_GITHUB_TOKEN: data.access_token, USER_AUTH_CODE: ""});
+      break;
+    } catch (error) {
+      console.warn("Error polling for token:", error);
+      await sleep(intervalMs);
+    }
+  }
+
+  chrome.storage.sync.set({USER_AUTH_CODE: ""});
+
+  if (Date.now() >= deadline){
+    console.error("Device flow auth code expired. Please try signing in again.");
+    return false;
+  }
+
+  return true;
+}
+
+async function sleep(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
 

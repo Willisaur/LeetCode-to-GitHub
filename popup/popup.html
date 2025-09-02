@@ -5,44 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Solution Saver - Popup</title>
     <link rel="stylesheet" href="popup.css">
+    <script src="popup.js" defer></script>
   </head>
-
+  
   <body>
     <div id="popup-container">
       <header id="header-container">
-        <h1>Solution Saver</h1>
+        <h1>Submission Saver</h1>
         <p>
           Not affiliated with LeetCode or GitHub.
         </p>
       </header>
-
+      
       <main>
+        <form id="options-form" autocomplete="off">
+          <label for="github-repo-name">Repo name: </label>
+          <input id="github-repo-name" placeholder="LeetCode-Solutions" />
+          <input id="save-options-button" type="submit" />
+        </form>
+        
         <div id="popup-buttons">
-          <a id="options" class="button-like" href="../options/options.html" role="button" aria-label="Open settings">Settings</a>
+          <a id="sign-in" href="https://github.com/login/device" aria-label="Sign in to GitHub" class="button-like" target="_blank">Sign in</a>
+          <a id="sign-out" href="https://github.com/settings/connections/applications/Ov23limmduLSqcWIZMSd" aria-label="Sign out of GitHub" class="button-like" target="_blank">Sign out</a>
         </div>
 
+        <div id="device-auth">
+          <p id="device-auth-code"></p>
+        </div>
+        
         <section id="social-links-container">
           <ul id="social-links">
             <li class="social-link github">
               <a href="https://github.com/Willisaur" target="_blank" rel="noopener noreferrer" aria-label="GitHub profile">
-                <img src="../icons/GitHub_Logo.png" alt="" aria-hidden="true">
+                <img src="../icons/github.png" alt="" aria-hidden="true">
               </a>
             </li>
             <li class="social-link linkedin">
               <a href="https://www.linkedin.com/in/willstarling/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn profile">
-                <img src="../icons/LinkedIn_Logo.png" alt="" aria-hidden="true">
+                <img src="../icons/linkedin.png" alt="" aria-hidden="true">
               </a>
             </li>
             <li class="social-link paypal">
               <a href="https://paypal.me/willisaur" target="_blank" rel="noopener noreferrer" aria-label="PayPal">
-                <img src="../icons/PayPal_Logo.png" alt="" aria-hidden="true">
+                <img src="../icons/paypal.png" alt="" aria-hidden="true">
               </a>
             </li>
           </ul>
         </section>
       </main>
     </div>
-
-    <script src="popup.js"></script>
   </body>
 </html>

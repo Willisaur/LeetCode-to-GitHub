@@ -1,0 +1,5 @@
+{
+  "error": "expired_token",
+  "error_description": "This 'device_code' has expired.",
+  "error_uri": "https://docs.github.com/developers/apps/authorizing-oauth-apps#error-codes-for-the-device-flow"
+}

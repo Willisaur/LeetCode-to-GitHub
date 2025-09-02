@@ -1,16 +1,15 @@
 {
-  "name": "Solution Saver - Save LeetCode solutions to GitHub",
-  "description": "Automatically upload your LeetCode solutions to GitHub.",
+  "name": "Submission Saver - Save LeetCode solutions to GitHub",
+  "description": "Automatically upload your LeetCode solutions to GitHub",
   "version": "3.0.0",
   "manifest_version": 3,
   "action": {
     "default_popup": "./popup/popup.html",
-    "default_icon": "./icons/L2G_128.png"
+    "default_icon": "./icons/128.png"
   },
-  "options_page": "./options/options.html",
   "icons": {
-    "128": "./icons/L2G_128.png",
-    "16": "./icons/L2G_16.png"
+    "128": "./icons/128.png",
+    "16": "./icons/16.png"
   },
   "permissions": [
     "storage",
@@ -18,11 +17,13 @@
   ],
   "host_permissions": [
     "https://api.github.com/*",
+    "https://github.com/login*",
     "https://leetcode.com/graphql/",
     "https://leetcode.com/problems/*/submit/",
     "https://leetcode.com/submissions/detail/*/check/"
   ],
   "background": {
     "service_worker": "service-worker.js"
-  }
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvKmlQLIdfRc5zpvrV0e64HTY3o75qjnq/v+9dVMavOYppNjW/OHrJadSxXnzLTiiqjOWi7iL8e0oIBak3vRbK0nVWJrqc27ms+qzD0ZEUlmjWAZzaKZ+EFyLXqXYfNxr0pW9sadzyZt8u5UN2Ls5yIkzceIGzK3fxWUUKLmaBUp3B5KrEoayluR9GY6J3eMhQoKbWLgjZUXwDBj4jU7jV7/iKoUQnHHOwQKMkYNZMDHwvlfR5gOIEOjI17WjLohPCnGfVTFRb7uWDM+WySoX/hBSc7m8+++uJSOoe2Y7YJTvXe3WUlMWf7cq5/MeCJWS5tRuyyVmQJmzo5AMs1/R+QIDAQAB"
 }
