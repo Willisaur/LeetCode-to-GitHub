@@ -43,16 +43,25 @@ function cleanUpSubmissionDetailsMap(){
 setInterval(cleanUpSubmissionDetailsMap, SUBMISSION_DETAILS_TTL);
 
 
-chrome.runtime.onMessage.addListener(async function(request, sender, sendResponse) {
-  if (request.data === "start_auth_flow") {
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  if (request.data !== "start_auth_flow") {
+    return;
+  }
+  
+  // must use IIFE to keep connection open
+  (async () => {
     console.log("Starting device auth flow");
     const { device_code, user_code, expires_in, interval } = await getDeviceCode();
+    
+    sendResponse(user_code);
     chrome.storage.sync.set({ USER_AUTH_CODE: user_code }); // store the auth code to write in the popup
-
+  
     if (! (await pollForToken(device_code, expires_in, interval))){
       console.warn("Auth token not found after polling");
     }
-  }
+  })();
+
+  return true;
 });
 
 
@@ -63,6 +72,7 @@ chrome.runtime.onInstalled.addListener(function(details) {
     });
   } else if (details.reason === "update"){
     // TO DO: add page explaining how to login since it's not intuitive
+
   }
 });
 
@@ -483,29 +493,30 @@ async function getDeviceCode(){
 }
 
 
-async function pollForToken(device_code, expires_in, interval = 5){
+async function pollForToken(device_code, expires_in, interval){
   const deadline = Date.now() + (expires_in * 1000);
   const intervalMs = interval * 1000;
 
-  console.log("Polling for auth token...");
+  console.log("Starting auth token polling");
 
   while (Date.now() < deadline) {
     try {
+      console.debug("Polling for token...");
       const response = await fetch(`https://github.com/login/oauth/access_token?client_id=Ov23limmduLSqcWIZMSd&device_code=${device_code}&grant_type=urn:ietf:params:oauth:grant-type:device_code`, {
         method: "POST",
         headers: { "Accept": "application/json" }
       });
   
       const data = await response.json();
+      console.debug("Poll data:", data);
       
       if (!data?.access_token){
-        console.debug("No access token in response... likely awaiting user input", data);
         await sleep(intervalMs);
         continue;
       }
 
       console.debug("Successfully obtained GitHub access token:", data.access_token, "with scopes", data.scope);
-      chrome.storage.sync.set({ STORAGE_GITHUB_TOKEN: data.access_token, USER_AUTH_CODE: ""});
+      chrome.storage.sync.set({ STORAGE_GITHUB_TOKEN: data.access_token });
       break;
     } catch (error) {
       console.warn("Error polling for token:", error);

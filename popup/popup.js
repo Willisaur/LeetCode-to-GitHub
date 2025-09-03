@@ -1,29 +1,50 @@
 // listeners
-document.getElementById("sign-in").addEventListener("click", function() {
-  chrome.runtime.sendMessage({ data: "start_auth_flow" });
+document.getElementById("sign-in").addEventListener("click", async function() {
+  const authCodeText = document.getElementById("device-auth-code");
+  
+  chrome.windows.create({
+    focused: true,
+    url: "https://github.com/login/device",
+    width: 800,
+    height: 800
+  });
+  
+  chrome.storage.sync.get(["USER_AUTH_CODE"], (STORAGE) => {
+    if (!STORAGE?.USER_AUTH_CODE){ // no auth flow started yet
+      chrome.runtime.sendMessage({ data: "start_auth_flow" }, (response) => {
+        authCodeText.textContent = "Enter login code: " + response;
+        authCodeText.hidden = false;
+      });
+    }
+  });
 });
 document.getElementById("sign-out").addEventListener("click", function() {
-  chrome.storage.sync.set({ STORAGE_GITHUB_TOKEN: "" });
+  const signInButton = document.getElementById("sign-in");
+  const signOutButton = document.getElementById("sign-out");
+
+  signInButton.hidden = false;
+  signOutButton.hidden = true;
+
+  chrome.storage.sync.set({ STORAGE_GITHUB_TOKEN: "" } );
 });
 
 
 document.addEventListener("DOMContentLoaded", () => {
   chrome.storage.sync.get(["USER_AUTH_CODE", "STORAGE_GITHUB_TOKEN", "STORAGE_GITHUB_REPO"], (STORAGE) => {
     console.debug("Storage", STORAGE);
-
-    if (STORAGE?.USER_AUTH_CODE){
-      document.getElementById("device-auth-code").textContent = "Enter login code: " + STORAGE.USER_AUTH_CODE;
-    }
-
-    
     const signInButton = document.getElementById("sign-in");
     const signOutButton = document.getElementById("sign-out");
     const authCodeText = document.getElementById("device-auth-code");
+
+    if (STORAGE?.USER_AUTH_CODE){
+      authCodeText.textContent = "Enter login code: " + STORAGE.USER_AUTH_CODE;
+    } else {
+      authCodeText.hidden = true;
+    }
   
-    if (STORAGE?.STORAGE_GITHUB_TOKEN){
+    if (STORAGE?.STORAGE_GITHUB_TOKEN && STORAGE.STORAGE_GITHUB_TOKEN.startsWith("gho_")){ // gho == oauth token
       signInButton.hidden = true;
       signOutButton.hidden = false;
-      authCodeText.hidden = true;
     } else {
       signInButton.hidden = false;
       signOutButton.hidden = true;
