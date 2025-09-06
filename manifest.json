@@ -1,7 +1,7 @@
 {
   "name": "Submission Saver - Save LeetCode solutions to GitHub",
   "description": "Automatically upload your LeetCode solutions to GitHub",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "manifest_version": 3,
   "action": {
     "default_popup": "./popup/popup.html",

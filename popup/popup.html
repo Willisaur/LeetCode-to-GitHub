@@ -18,41 +18,45 @@
       </header>
       
       <main>
-        <form id="options-form" autocomplete="off">
+        <form id="options" autocomplete="off">
           <label for="github-repo-name">Repo name: </label>
           <input id="github-repo-name" placeholder="LeetCode-Solutions" />
           <input id="save-options-button" type="submit" />
         </form>
         
-        <div id="popup-buttons">
-          <a id="sign-in" aria-label="Sign in to GitHub" class="button-like">Sign in</a>
-          <a id="sign-out" href="https://github.com/settings/connections/applications/Ov23limmduLSqcWIZMSd" aria-label="Sign out of GitHub" class="button-like" target="_blank">Sign out</a>
+        <div id="login">
+          <div id="login-buttons">
+            <a id="sign-in" aria-label="Sign in to GitHub" class="button-like">Sign in</a>
+            <a id="sign-out" href="https://github.com/settings/connections/applications/Ov23limmduLSqcWIZMSd" aria-label="Sign out of GitHub" class="button-like" target="_blank">Sign out</a>
+          </div>
+          <div id="auth-info">
+            <label class="auth" for="auth-code">Enter code:</label>
+            <p class="auth" id="auth-code"></p>
+          </div>
         </div>
 
-        <div id="device-auth">
-          <p id="device-auth-loading"></p>
-          <p id="device-auth-code"></p>
-        </div>
         
-        <section id="social-links-container">
+        <footer id="social-links-container">
           <ul id="social-links">
-            <li class="social-link github">
+            <li class="social-link">
               <a href="https://github.com/Willisaur" target="_blank" rel="noopener noreferrer" aria-label="GitHub profile">
                 <img src="../icons/github.png" alt="" aria-hidden="true">
               </a>
             </li>
-            <li class="social-link linkedin">
+            <li class="social-link">
               <a href="https://www.linkedin.com/in/willstarling/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn profile">
                 <img src="../icons/linkedin.png" alt="" aria-hidden="true">
               </a>
             </li>
-            <li class="social-link paypal">
+            <li class="social-link">
               <a href="https://paypal.me/willisaur" target="_blank" rel="noopener noreferrer" aria-label="PayPal">
                 <img src="../icons/paypal.png" alt="" aria-hidden="true">
               </a>
             </li>
           </ul>
-        </section>
+
+          <p id="report-issue"><a href="https://github.com/Willisaur/LeetCode-to-GitHub/issues/new" target="_blank">Report a bug</a></p>
+        </footer>
       </main>
     </div>
   </body>

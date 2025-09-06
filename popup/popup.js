@@ -1,6 +1,7 @@
 // listeners
 document.getElementById("sign-in").addEventListener("click", async function() {
-  const authCodeText = document.getElementById("device-auth-code");
+  const authInfo = document.getElementById("auth-info");
+  const authCodeText = document.getElementById("auth-code");
   
   chrome.windows.create({
     focused: true,
@@ -12,8 +13,8 @@ document.getElementById("sign-in").addEventListener("click", async function() {
   chrome.storage.sync.get(["USER_AUTH_CODE"], (STORAGE) => {
     if (!STORAGE?.USER_AUTH_CODE){ // no auth flow started yet
       chrome.runtime.sendMessage({ data: "start_auth_flow" }, (response) => {
-        authCodeText.textContent = "Enter login code: " + response;
-        authCodeText.hidden = false;
+        authCodeText.textContent = response;
+        authInfo.hidden = false;
       });
     }
   });
@@ -34,12 +35,14 @@ document.addEventListener("DOMContentLoaded", () => {
     console.debug("Storage", STORAGE);
     const signInButton = document.getElementById("sign-in");
     const signOutButton = document.getElementById("sign-out");
-    const authCodeText = document.getElementById("device-auth-code");
+    const authInfo = document.getElementById("auth-info");
+    const authCodeText = document.getElementById("auth-code");
+    console.log("auth info", authInfo)
 
     if (STORAGE?.USER_AUTH_CODE){
-      authCodeText.textContent = "Enter login code: " + STORAGE.USER_AUTH_CODE;
+      authCodeText.textContent = STORAGE.USER_AUTH_CODE;
     } else {
-      authCodeText.hidden = true;
+      authInfo.hidden = true;
     }
   
     if (STORAGE?.STORAGE_GITHUB_TOKEN && STORAGE.STORAGE_GITHUB_TOKEN.startsWith("gho_")){ // gho == oauth token
@@ -57,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-document.getElementById("options-form").addEventListener("submit", (event) => {
+document.getElementById("options").addEventListener("submit", (event) => {
   event.preventDefault();
   console.log("Saved new repo name");
   const githubRepo = document.getElementById("github-repo-name").value;

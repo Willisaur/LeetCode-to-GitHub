@@ -124,10 +124,30 @@ a:hover{
     text-decoration-color: var(--muted);
 }
 
+#login {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: .7em;
+    align-items: center;
+}
+#auth-info {
+    display: flex;
+    flex-direction: column;
+    gap: .1em;
+}
+.auth {
+    margin: 0;
+}
+
+#report-issue {
+    font-size: 8px;
+    margin: 5px 0 0 0;
+}
+
 [hidden] {
     display: none !important;
 }
-
 
 /* Light theme support */
 @media (prefers-color-scheme: light) {

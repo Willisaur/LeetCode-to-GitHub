@@ -56,9 +56,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     sendResponse(user_code);
     chrome.storage.sync.set({ USER_AUTH_CODE: user_code }); // store the auth code to write in the popup
   
-    if (! (await pollForToken(device_code, expires_in, interval))){
-      console.warn("Auth token not found after polling");
-    }
+    await pollForToken(device_code, expires_in, interval);
   })();
 
   return true;
