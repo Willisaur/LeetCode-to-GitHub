@@ -1,7 +1,7 @@
 # Download 
 [Install from the Chrome Web Store](https://bit.ly/L2G-CWS-v2)
 
-# Solution Saver
+# SubmissionSaver
 A Chrome extension that automatically uploads your LeetCode solutions to GitHub.
 
 ## Demo GIF
